@@ -22,7 +22,7 @@
           <div class="qh-title" id="q-title">—</div>
         </div>
         <div class="qh-right">
-          <span class="qcount" id="q-count">0/10</span>
+          <span class="qcount" id="q-count">0/20</span>
           <a class="iconbtn" href="index.html" title="返回首页">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
           </a>
@@ -107,8 +107,12 @@
   }
 
   function renderAll() {
-    var html = '', passShown = false;
+    var html = '', passShown = false, boostShown = false;
     day.questions.forEach(function (q, i) {
+      if (q.tier === 'boost' && !boostShown) {
+        boostShown = true;
+        html += '<div class="tierbar"><span>进阶 10 题 · 难度提升</span></div>';
+      }
       if (q.type === 'reading' && !passShown && day.passage) {
         html += '<div class="passage"><h3>' + A.esc(day.passage.title) + '</h3>' +
           '<p>' + A.esc(day.passage.text) + '</p>' +
