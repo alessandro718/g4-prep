@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<title>今日练习 · G4 备考</title>
+</head>
+<body data-page="quiz">
+<header class="site-head" id="site-head"></header>
+
+<main style="padding-top:0">
+  <div class="wrap">
+    <div class="quizhead">
+      <div class="qh-row">
+        <div style="min-width:0">
+          <div class="qh-day" id="q-day">DAY 1 / 15</div>
+          <div class="qh-title" id="q-title">—</div>
+        </div>
+        <div class="qh-right">
+          <span class="qcount" id="q-count">0/10</span>
+          <a class="iconbtn" href="index.html" title="返回首页">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="bar" style="margin-top:10px"><i id="pbar" style="width:0"></i></div>
+    </div>
+
+    <div class="qwrap">
+      <div id="questions"></div>
+
+      <div class="card" id="output-card" style="margin-top:6px"></div>
+
+      <div style="margin:18px 0 8px">
+        <button class="btn gold block" id="btn-finish">查看今日成绩</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px" id="nav-days"></div>
+      <div class="hint center" style="margin-bottom:8px">已答 <span id="answered">0</span> / <span id="total">10</span> 题 · 答完再看解析效果最好</div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="fl">© <span id="foot-year"></span> G4 15 天备考 · 题库为自编练习，非校方真题</div>
+    <div class="flinks"><a href="plan.html">15 天计划</a><a href="wrong.html">错题本</a><a href="report.html">学习报告</a></div>
+  </div>
+</footer>
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  var A = window.App, S = A.S, DAYS = A.DAYS, SUBJ = A.SUBJ;
+  var params = new URLSearchParams(location.search);
+  var d = A.clamp(parseInt(params.get('day'), 10) || A.todayIdx(), 1, 15);
+  var day = DAYS[d - 1];
+
+  document.title = 'Day ' + d + ' · ' + day.title;
+  document.getElementById('q-day').textContent = 'DAY ' + d + ' / 15';
+  document.getElementById('q-title').textContent = day.title;
+  document.getElementById('total').textContent = day.questions.length;
+
+  /* ---------- 渲染题目 ---------- */
+  function isOutput(a) { return !!(a && a.v === 'done'); }
+
+  function qHTML(q, id, i) {
+    var a = S.answers[id], locked = !!a, isEn = q.subject === 'eng';
+    var body = '';
+    if (q.type === 'fill') {
+      body = '<div class="fillrow">' +
+        '<input type="text" inputmode="' + (q.inputmode || 'text') + '" placeholder="输入答案" value="' + (locked ? A.esc(a.v) : '') + '" ' + (locked ? 'disabled' : '') + ' data-fill="' + id + '">' +
+        (locked ? '' : '<button data-act="checkfill" data-id="' + id + '">检查</button>') +
+        '</div>';
+    } else {
+      body = q.options.map(function (o, oi) {
+        var cls = 'opt' + (isEn ? ' en' : '');
+        if (locked) {
+          cls += ' locked';
+          if (oi === q.answer) cls += ' correct';
+          else if (String(oi) === String(a.v)) cls += ' wrong';
+        }
+        return '<div class="' + cls + '" ' + (locked ? '' : 'data-act="pick" data-id="' + id + '" data-oi="' + oi + '"') + '>' +
+          '<div class="k">' + 'ABCD'[oi] + '</div><div class="t">' + A.esc(o) + '</div></div>';
+      }).join('');
+    }
+    return '<div class="q" id="q-' + id + '">' +
+      '<div class="qtop"><span class="num">Q' + (i + 1) + '</span>' +
+        '<span class="pill ' + q.subject + '">' + SUBJ[q.subject] + '</span>' +
+        (q.skill ? '<span class="hint" style="font-size:11.5px">' + A.esc(q.skill) + '</span>' : '') +
+      '</div>' +
+      '<div class="stem ' + (isEn ? 'en' : '') + '">' + A.esc(q.stem) + '</div>' +
+      body +
+      '<div class="explain ' + (locked ? 'show' : '') + '" id="ex-' + id + '">' + (locked ? explainHTML(q, a) : '') + '</div>' +
+    '</div>';
+  }
+
+  function explainHTML(q, a) {
+    var right = q.type === 'fill' ? (q.answerText || q.answer) : q.options[q.answer];
+    return '<b>' + (a.ok ? '答对了' : '正确答案：' + A.esc(right)) + '</b>　' + q.explain;
+  }
+
+  function renderAll() {
+    var html = '', passShown = false;
+    day.questions.forEach(function (q, i) {
+      if (q.type === 'reading' && !passShown && day.passage) {
+        html += '<div class="passage"><h3>' + A.esc(day.passage.title) + '</h3>' +
+          '<p>' + A.esc(day.passage.text) + '</p>' +
+          '<div class="note">' + A.esc(day.passage.note || '先通读一遍，再做题：每段读完后在心里问一句「这段在说什么」。') + '</div></div>';
+        passShown = true;
+      }
+      html += qHTML(q, d + '-' + i, i);
+    });
+    document.getElementById('questions').innerHTML = html;
+  }
+
+  function outputHTML() {
+    var o = day.output;
+    if (!o) return '';
+    var key = 'out-' + day.day, done = S.answers[key] && S.answers[key].ok;
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+        '<span class="pill gold">输出任务 · 不判分</span>' + (done ? '<span class="pill ok">已完成</span>' : '') +
+      '</div>' +
+      '<h3>' + A.esc(o.title) + '</h3>' +
+      '<p>' + A.esc(o.prompt) + '</p>' +
+      (o.checklist ? '<ul class="list" style="margin-top:10px;font-size:13.5px;color:var(--muted)">' +
+        o.checklist.map(function (c) { return '<li>' + A.esc(c) + '</li>'; }).join('') + '</ul>' : '') +
+      '<div style="margin-top:13px"><button class="btn ghost sm block" data-act="outdone" data-key="' + key + '">' +
+        (done ? '已完成 ✓（点击撤回）' : '家长确认后，标记为已完成') + '</button></div>';
+  }
+
+  function updateBar() {
+    var s = A.dayScore(d);
+    document.getElementById('pbar').style.width = (s.ans / day.questions.length * 100) + '%';
+    document.getElementById('answered').textContent = s.ans;
+    document.getElementById('q-count').textContent = s.ans + '/' + day.questions.length;
+  }
+
+  function refreshQ(id, i) {
+    var el = document.getElementById('q-' + id);
+    if (!el) return;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = qHTML(day.questions[i], id, i);
+    el.replaceWith(tmp.firstElementChild);
+  }
+
+  function pick(id, oi) {
+    if (S.answers[id]) return;
+    var i = +String(id).split('-')[1];
+    var q = day.questions[i];
+    S.answers[id] = { v: String(oi), ok: String(q.answer) === String(oi) };
+    A.save();
+    refreshQ(id, i);
+    updateBar();
+  }
+
+  function checkFill(id) {
+    if (S.answers[id]) return;
+    var inp = document.querySelector('[data-fill="' + id + '"]');
+    if (!inp) return;
+    var raw = (inp.value || '').trim();
+    if (!raw) { A.toast('先输入答案再检查'); return; }
+    var i = +String(id).split('-')[1];
+    var q = day.questions[i];
+    var norm = function (s) { return String(s).toLowerCase().replace(/[\s,，。.]/g, ''); };
+    var accept = Array.isArray(q.answer) ? q.answer : [q.answer];
+    var ok = accept.some(function (x) { return norm(x) === norm(raw); });
+    S.answers[id] = { v: raw, ok: ok };
+    A.save();
+    refreshQ(id, i);
+    updateBar();
+  }
+
+  /* ---------- 成绩单 ---------- */
+  function finish() {
+    var s = A.dayScore(d);
+    if (!s.ans) { A.toast('先做几道题再看成绩吧'); return; }
+    var by = { eng: [0, 0], math: [0, 0], chi: [0, 0] };
+    day.questions.forEach(function (q, i) {
+      var a = S.answers[d + '-' + i];
+      if (!a) return;
+      by[q.subject][1]++; if (a.ok) by[q.subject][0]++;
+    });
+    var weak = Object.keys(by).filter(function (k) { return by[k][1] > 0 && by[k][0] / by[k][1] < 0.7; }).map(function (k) { return SUBJ[k]; });
+    var pct = Math.round(s.ok / s.ans * 100);
+    var title = pct >= 90 ? '很稳，保持节奏' : pct >= 75 ? '基本到位，注意细节' : pct >= 60 ? '有进步空间，重点看错题' : '今天先补基础，别急着提速';
+
+    var m = document.createElement('div');
+    m.className = 'mask';
+    m.innerHTML = '<div class="sheet">' +
+      '<div class="center" style="margin-bottom:14px">' +
+        '<div style="font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.1em">DAY ' + d + ' 成绩单</div>' +
+        '<div class="score" style="margin-top:6px">' + s.ok + '<small> / ' + s.all + '</small></div>' +
+        '<div style="font-size:15px;font-weight:600;margin-top:4px">' + title + '</div>' +
+        '<div class="hint" style="margin-top:2px">已答 ' + s.ans + ' 题 · 正确率 ' + pct + '%</div>' +
+      '</div>' +
+      Object.keys(by).map(function (k) {
+        return by[k][1] ? '<div class="srow"><span><span class="pill ' + k + '">' + SUBJ[k] + '</span></span><span><b style="font-size:16px">' + by[k][0] + '</b> / ' + by[k][1] + '</span></div>' : '';
+      }).join('') +
+      (weak.length
+        ? '<div class="quote">今天偏弱：<b>' + weak.join('、') + '</b>。明天开始前，先用 5 分钟把这几道错题重讲一遍。</div>'
+        : '<div class="quote">三科都在 70% 以上，节奏没问题。继续按计划走。</div>') +
+      '<div style="display:flex;gap:9px;margin-top:16px">' +
+        '<button class="btn ghost sm" style="flex:1" data-act="closeSheet">留在本页</button>' +
+        '<a class="btn sm" style="flex:1" href="wrong.html">去看错题</a>' +
+      '</div>' +
+      '<div class="hint center" style="margin-top:12px">明天：' + (DAYS[d] ? A.esc(DAYS[d].title) : '完成全部计划，做最后一轮错题回顾') + '</div>' +
+    '</div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target === m) m.remove(); });
+  }
+
+  /* ---------- 计时 ---------- */
+  var start = Date.now();
+  setInterval(function () {
+    var sec = Math.floor((Date.now() - start) / 1000);
+    var el = document.getElementById('q-day');
+    if (!el) return;
+    el.textContent = 'DAY ' + d + ' / 15 · 已用 ' + A.pad(Math.floor(sec / 60)) + ':' + A.pad(sec % 60);
+  }, 1000);
+
+  /* ---------- 事件 ---------- */
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var act = el.dataset.act;
+    if (act === 'pick') pick(el.dataset.id, el.dataset.oi);
+    else if (act === 'checkfill') checkFill(el.dataset.id);
+    else if (act === 'closeSheet') { var m = document.querySelector('.mask'); if (m) m.remove(); }
+    else if (act === 'outdone') {
+      var k = el.dataset.key;
+      if (S.answers[k]) delete S.answers[k];
+      else S.answers[k] = { ok: true, v: 'done' };
+      A.save();
+      document.getElementById('output-card').innerHTML = outputHTML();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.fill) checkFill(e.target.dataset.fill);
+  });
+  document.getElementById('btn-finish').addEventListener('click', finish);
+
+  /* ---------- 初始化 ---------- */
+  renderAll();
+  document.getElementById('output-card').innerHTML = outputHTML();
+  updateBar();
+
+  var prev = d > 1 ? '<a class="btn ghost sm block" href="quiz.html?day=' + (d - 1) + '">← Day ' + (d - 1) + '</a>' : '<span style="flex:1"></span>';
+  var next = d < 15 ? '<a class="btn ghost sm block" href="quiz.html?day=' + (d + 1) + '">Day ' + (d + 1) + ' →</a>' : '<span style="flex:1"></span>';
+  document.getElementById('nav-days').innerHTML = prev + next;
+})();
+</script>
+</body>
+</html>

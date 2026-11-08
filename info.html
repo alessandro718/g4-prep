@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<title>资料与设置 · G4 备考</title>
+</head>
+<body data-page="info">
+<header class="site-head" id="site-head"></header>
+
+<main>
+  <div class="wrap" style="max-width:860px">
+    <div class="sect-head" style="margin-top:0">
+      <div>
+        <h2>资料与设置</h2>
+        <p>考情、方法、面试题库；日期与提醒都在这里改</p>
+      </div>
+    </div>
+
+    <!-- 设置 -->
+    <div class="card" style="margin-bottom:18px">
+      <h3>计划设置</h3>
+      <div class="kv"><div class="k">孩子称呼</div><div class="v"><input id="f-name" type="text" maxlength="12" placeholder="可选，用于报告标题" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit"></div></div>
+      <div class="kv"><div class="k">考试日期</div><div class="v"><input id="f-exam" type="date"></div></div>
+      <div class="kv"><div class="k">开始日期</div><div class="v"><input id="f-start" type="date"></div></div>
+      <div class="kv"><div class="k">每日提醒</div><div class="v" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="f-time" type="time"><span class="hint" id="notif-state">—</span>
+      </div></div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn sm" id="btn-ics">导出 15 天日历提醒</button>
+        <button class="btn sm ghost" id="btn-notif">开启浏览器通知</button>
+        <button class="btn sm ghost" id="btn-reset" style="color:var(--bad)">清空作答记录</button>
+      </div>
+      <div class="hint" style="margin-top:10px">日历提醒由手机系统推送，页面关掉也会响，是最稳的方式；浏览器通知只在页面打开时生效。</div>
+    </div>
+
+    <!-- 考什么 -->
+    <div class="sect-head"><div><h2 style="font-size:19px">考什么</h2><p>四年级插班 / 低年级入学活动的公开科目反馈</p></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="tag">G1–G4 插班</div>
+      <div class="kv"><div class="k">英语</div><div class="v">听力、词汇、阅读、简单写作。难度中等但<b>题量大</b>，普遍反馈时间紧。</div></div>
+      <div class="kv"><div class="k">数学</div><div class="v">基础运算 + 逻辑题为主，答题时间相对充裕，但题干常为英文。</div></div>
+      <div class="kv"><div class="k">语文</div><div class="v">拼音、识字、简单阅读，难度适中。</div></div>
+      <div class="kv"><div class="k">面试</div><div class="v">氛围轻松，日常话题，主要看英文表达是否自然、能否接住追问。</div></div>
+      <div class="quote">校内 MAP 只考 <b>Reading</b> 与 <b>Language Usage</b> 两科，所以「读得懂 + 语法准」是长期主线，本计划按这条主线设计。</div>
+    </div>
+
+    <!-- 方法 -->
+    <div class="sect-head"><div><h2 style="font-size:19px">15 天怎么用</h2></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <ol class="list">
+        <li><b>每天 10 题 + 1 个输出任务</b>，30–40 分钟，一次做完，不中途查答案。</li>
+        <li><b>限时</b>：整套计时，训练「做得完」的能力。做完再看解析。</li>
+        <li><b>第二天先重做昨天的错题</b>，再开新的一天。这一步比多做十道新题有用。</li>
+        <li><b>英语阅读固定动作</b>：划关键词、每段一句话总结、先看题干再回读。</li>
+        <li><b>写作只用「三段式」</b>：观点一句 → 两个理由各一句 → 收尾一句。四年级不需要复杂句。</li>
+        <li>最后两天不要再刷新题，只做错题 + 面试口述。</li>
+      </ol>
+    </div>
+
+    <!-- 面试 -->
+    <div class="sect-head"><div><h2 style="font-size:19px">面试高频题</h2></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">English</div>
+      <ul class="list" style="font-family:Georgia,serif">
+        <li>Tell me about yourself.</li>
+        <li>What is your favorite subject? Why?</li>
+        <li>What do you like to do after school?</li>
+        <li>Tell me about a book you read recently.</li>
+        <li>What do you do when you feel nervous?</li>
+        <li>If you and a classmate disagree, what will you do?</li>
+        <li>Which do you prefer, pizza or ice cream? Why?</li>
+        <li>What makes a good friend / a good teacher?</li>
+      </ul>
+      <div style="font-weight:700;font-size:14px;margin:16px 0 6px">中文</div>
+      <ul class="list">
+        <li>介绍一下你自己，说说你最喜欢做的事。</li>
+        <li>最近读过什么书？讲一个你记得的情节。</li>
+        <li>如果让你给爸爸妈妈安排一天，你会怎么安排？</li>
+        <li>如果同学被孤立了，你会怎么做？</li>
+        <li>你觉得自己今天考得怎么样？</li>
+      </ul>
+      <div class="quote">面试官最怕「背稿感」：答案长度、语速、起伏全都一样。练的时候要求孩子每题用不同开头，允许停顿和改口。</div>
+    </div>
+
+    <!-- 加桌面 -->
+    <div class="sect-head"><div><h2 style="font-size:19px">加到手机桌面</h2></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <ul class="list" style="font-size:14px">
+        <li><b>iPhone</b>：Safari 打开本页 → 分享 → 「添加到主屏幕」。</li>
+        <li><b>Android</b>：Chrome 打开 → 右上角菜单 → 「添加到主屏幕 / 安装应用」。</li>
+        <li>加到桌面后全屏运行，像 App 一样；数据存在本机，换设备不同步。</li>
+      </ul>
+    </div>
+
+    <!-- 来源 -->
+    <div class="sect-head"><div><h2 style="font-size:19px">内容来源</h2></div></div>
+    <div class="card">
+      <div class="hint" style="line-height:1.85">
+        考试结构依据公开考情整理：国际学校低年级插班场次的科目反馈（英语听力+词汇+阅读+简单写作、数学基础运算+逻辑、语文拼音识字+简单阅读、中英文面试），以及 NWEA MAP Growth Grade 4 公开样题与考点说明（Reading / Language Usage / Math）。<br><br>
+        题库为本计划自编，按上述考点结构对齐，<b>不是校方真题</b>；难度参考公开样题，用于训练节奏与手感，请勿当作押题。
+      </div>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="fl">© <span id="foot-year"></span> G4 15 天备考</div>
+    <div class="flinks"><a href="index.html">首页</a><a href="plan.html">15 天计划</a><a href="report.html">学习报告</a></div>
+  </div>
+</footer>
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  var A = window.App, S = A.S;
+
+  var fName = document.getElementById('f-name');
+  var fExam = document.getElementById('f-exam');
+  var fStart = document.getElementById('f-start');
+  var fTime = document.getElementById('f-time');
+  var st = document.getElementById('notif-state');
+
+  fName.value = S.name || '';
+  fExam.value = S.examDate;
+  fStart.value = S.startDate;
+  fTime.value = S.reminderTime;
+
+  function notifText() {
+    var s = A.notifState();
+    return { on: '系统通知：已开启', off: '系统通知：未开启', denied: '系统通知：被浏览器拒绝，请用日历提醒', unsupported: '当前浏览器不支持系统通知' }[s];
+  }
+  st.textContent = notifText();
+
+  fName.addEventListener('change', function () { S.name = fName.value.trim(); A.save(); A.toast('已保存'); });
+  fExam.addEventListener('change', function () {
+    if (!fExam.value) return;
+    S.examDate = fExam.value; A.save(); A.renderChrome('info'); A.toast('考试日期已更新');
+  });
+  fStart.addEventListener('change', function () {
+    if (!fStart.value) return;
+    S.startDate = fStart.value; A.save(); A.renderChrome('info');
+    A.toast('开始日期已更新：今天是第 ' + A.todayIdx() + ' 天');
+  });
+  fTime.addEventListener('change', function () {
+    S.reminderTime = fTime.value || '19:30'; A.save();
+    A.toast('提醒时间已设为 ' + S.reminderTime);
+  });
+
+  document.getElementById('btn-ics').addEventListener('click', A.exportICS);
+  document.getElementById('btn-notif').addEventListener('click', A.enableNotif);
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    if (confirm('确定清空所有作答记录和错题吗？此操作不可恢复（设置会保留）。')) {
+      S.answers = {}; A.save(); A.toast('已清空作答记录');
+    }
+  });
+})();
+</script>
+</body>
+</html>

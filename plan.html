@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<title>15 天计划 · G4 备考</title>
+</head>
+<body data-page="plan">
+<header class="site-head" id="site-head"></header>
+
+<main>
+  <div class="wrap" style="max-width:860px">
+    <div class="sect-head" style="margin-top:0">
+      <div>
+        <h2>15 天路线图</h2>
+        <p id="plan-sum">—</p>
+      </div>
+      <a class="more" href="quiz.html">今天的题 →</a>
+    </div>
+
+    <div class="card tight" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+        <span style="font-size:13.5px;font-weight:600">整体进度</span>
+        <span style="font-size:13.5px;color:var(--muted)" id="plan-count">0 / 15 天</span>
+      </div>
+      <div class="bar navy"><i id="plan-bar" style="width:0"></i></div>
+      <div class="hint" style="margin-top:9px">建议固定时段一次做完一整套，中途不查答案；第二天先重做昨天的错题，再开新的一天。</div>
+    </div>
+
+    <div id="phases"></div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>每天固定动作（30–40 分钟）</h3>
+      <ol class="list" style="margin-top:8px">
+        <li>限时做 10 题，不查答案、不中途求助。</li>
+        <li>对答案，逐题看解析，只标记「为什么错」。</li>
+        <li>做 1 个输出任务（口述或写 3–5 句），家长口头确认。</li>
+        <li>睡前用 1 分钟说出今天最不该错的那道题。</li>
+      </ol>
+    </div>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="fl">© <span id="foot-year"></span> G4 15 天备考 · 题库为自编练习，非校方真题</div>
+    <div class="flinks"><a href="index.html">首页</a><a href="report.html">学习报告</a><a href="info.html">资料与设置</a></div>
+  </div>
+</footer>
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  var A = window.App, DAYS = A.DAYS, idx = A.todayIdx();
+  var t = A.totalStats();
+  document.getElementById('plan-sum').textContent =
+    '已完成 ' + t.done + ' 天 · 累计正确率 ' + t.pct + '%（' + t.ans + ' 题）';
+  document.getElementById('plan-count').textContent = t.done + ' / 15 天';
+  document.getElementById('plan-bar').style.width = (t.done / 15 * 100) + '%';
+
+  var phases = [
+    { name: '第一阶段 · 摸底与基础', range: [1, 5], desc: '先看清起点，再补最短的板：词汇辨析、语法时态、阅读找证据、分数与面积。' },
+    { name: '第二阶段 · 分项突破', range: [6, 10], desc: 'Day 7 第一次限时周测；应用题、长篇阅读、语文阅读与改写逐个过。' },
+    { name: '第三阶段 · 模考与收口', range: [11, 15], desc: 'Day 14 全真模考；最后一天只做错题和面试口述，不再刷新题。' }
+  ];
+
+  var html = '';
+  phases.forEach(function (ph, pi) {
+    var days = DAYS.filter(function (d) { return d.day >= ph.range[0] && d.day <= ph.range[1]; });
+    var done = days.filter(function (d) { return A.dayDone(d.day); }).length;
+    html += '<section class="sect">' +
+      '<div class="sect-head" style="margin-bottom:12px">' +
+        '<div><h2 style="font-size:17px">' + ph.name + '</h2><p>' + ph.desc + '</p></div>' +
+        '<span class="pill' + (done === days.length ? ' ok' : '') + '">' + done + ' / ' + days.length + ' 天</span>' +
+      '</div>';
+    days.forEach(function (d) {
+      var s = A.dayScore(d.day), isDone = A.dayDone(d.day);
+      var mark = d.day < idx ? 'past' : (d.day === idx ? '' : 'future');
+      html += '<a class="ditem' + (isDone ? ' done' : '') + '" href="quiz.html?day=' + d.day + '">' +
+        '<div class="dnum">' + (isDone ? '✓' : d.day) + '<small>' + (isDone ? 'DONE' : 'DAY') + '</small></div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="dt">' + A.esc(d.title) +
+            (d.day === idx ? '<span class="pill gold">今天</span>' : '') +
+            ((d.day === 7 || d.day === 14) ? '<span class="pill">限时</span>' : '') +
+          '</div>' +
+          '<div class="dm">' + A.esc(d.focus.join(' · ')) + '　' +
+            (s.ans ? '<b style="color:' + (s.pct >= 80 ? 'var(--ok)' : s.pct >= 60 ? '#96601a' : 'var(--bad)') + '">' + s.ok + '/' + s.all + '</b> 正确' : '约 ' + d.minutes + ' 分钟') +
+          '</div>' +
+        '</div>' +
+        '<div class="chev">›</div>' +
+      '</a>';
+    });
+    html += '</section>';
+  });
+  document.getElementById('phases').innerHTML = html;
+})();
+</script>
+</body>
+</html>

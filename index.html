@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<meta name="description" content="15 天四年级插班备考计划：每天 10 道英语/数学/语文题，自动判分与解析，错题本 + 家长学习报告 + 每日日历提醒。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="G4 备考">
+<meta property="og:title" content="G4 · 15 天备考计划">
+<meta property="og:description" content="每天 10 题，15 天完成一轮；自动判分、错题本、家长报告。">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<title>G4 · 15 天备考计划 | 每天 10 题，自动判分</title>
+</head>
+<body data-page="home">
+<header class="site-head" id="site-head"></header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">四年级 · 插班备考</span>
+      <h1>15 天，把<em>能拿的分</em><br>全部拿回来</h1>
+      <p class="lead">每天 10 道题，英语、英文数学、语文按比例分配；做完立刻判分给解析，错题自动归档。15 天正好一轮，最后两天只过错题和面试。</p>
+      <div class="hero-actions">
+        <a class="btn gold" href="quiz.html" id="cta-start">开始今天的 10 道题</a>
+        <a class="btn ghost" href="plan.html">看 15 天路线</a>
+      </div>
+      <div class="hero-note">不用注册、不用下载；进度存在本机，手机电脑都能开。</div>
+    </div>
+    <aside class="hero-panel">
+      <div class="plabel">当前进度</div>
+      <div class="prow"><span class="pk">今天</span><span class="pv" id="p-day">Day 1<small>/15</small></span></div>
+      <div class="prow"><span class="pk">今日已完成</span><span class="pv" id="p-today">0<small>/10 题</small></span></div>
+      <div class="prow" style="display:block">
+        <div style="display:flex;justify-content:space-between"><span class="pk">累计正确率</span><span class="pv" id="p-pct">0<small>%</small></span></div>
+        <div class="pbar"><i id="p-bar" style="width:0"></i></div>
+      </div>
+      <div class="prow"><span class="pk">距考试</span><span class="pv" id="p-left">15<small>天</small></span></div>
+    </aside>
+  </div>
+</section>
+
+<main>
+  <div class="wrap">
+
+    <!-- 今天 -->
+    <section class="sect">
+      <div class="sect-head">
+        <div>
+          <h2>今天要做的事</h2>
+          <p id="today-date">—</p>
+        </div>
+        <a class="more" href="plan.html">全部 15 天 →</a>
+      </div>
+      <div class="card" id="today-card"></div>
+    </section>
+
+    <!-- 考什么 -->
+    <section class="sect">
+      <div class="sect-head">
+        <div>
+          <h2>这 15 天在练什么</h2>
+          <p>按公开考情与 MAP Grade 4 考点结构对齐，不是押题</p>
+        </div>
+        <a class="more" href="info.html">考情详情 →</a>
+      </div>
+      <div class="grid g4">
+        <div class="card flat">
+          <span class="pill eng">英语</span>
+          <h3 style="margin-top:10px">读得懂 + 语法准</h3>
+          <p>词汇辨析、语法、阅读篇章与简短写作。题量大、时间紧，练的是「快速定位」。</p>
+        </div>
+        <div class="card flat">
+          <span class="pill math">数学</span>
+          <h3 style="margin-top:10px">英文题干不丢分</h3>
+          <p>四则运算、分数、面积周长、应用题与逻辑。题干多为英文，先把条件读对。</p>
+        </div>
+        <div class="card flat">
+          <span class="pill chi">语文</span>
+          <h3 style="margin-top:10px">基础分不能丢</h3>
+          <p>拼音、字词、古诗与短文阅读，难度不高但容易粗心，靠每天少量固定练。</p>
+        </div>
+        <div class="card flat">
+          <span class="pill gold">面试</span>
+          <h3 style="margin-top:10px">说出来才算会</h3>
+          <p>中英文日常话题，每天一个输出任务：自我介绍、讲一本书、描述一件事。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 功能 -->
+    <section class="sect">
+      <div class="sect-head">
+        <div>
+          <h2>这个网站怎么帮你</h2>
+          <p>只有 15 天，工具必须省时间</p>
+        </div>
+      </div>
+      <div class="grid g3">
+        <div class="card">
+          <div class="tag">01 做题</div>
+          <h3>150 道题，一题一解析</h3>
+          <p>点选项立刻判对错，讲解写清「为什么错」，不用家长自己讲。</p>
+        </div>
+        <div class="card">
+          <div class="tag">02 复盘</div>
+          <h3>错题本自动归档</h3>
+          <p>做错的题按科目、技能归类，第二天开新题前先重做一遍。</p>
+        </div>
+        <div class="card">
+          <div class="tag">03 报告</div>
+          <h3>学习报告可分享给家长</h3>
+          <p>每日正确率柱状图 + 三科分项 + 薄弱技能，一键生成链接发给家人。</p>
+        </div>
+        <div class="card">
+          <div class="tag">04 提醒</div>
+          <h3>每天定时提醒</h3>
+          <p>导出日历后由手机系统闹铃提醒，页面不打开也会响。</p>
+        </div>
+        <div class="card">
+          <div class="tag">05 节奏</div>
+          <h3>限时 + 打卡</h3>
+          <p>每套计时，Day 7 / Day 14 是限时周测，练「做得完」。</p>
+        </div>
+        <div class="card">
+          <div class="tag">06 手机</div>
+          <h3>加到桌面像 App</h3>
+          <p>浏览器「添加到主屏幕」，全屏打开，一点就进。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 提醒 -->
+    <section class="sect">
+      <div class="grid g2" style="align-items:start">
+        <div class="card">
+          <span class="tag">每天定时提醒</span>
+          <h3 style="margin-top:8px">选个固定时间，把 15 天写进日历</h3>
+          <p style="margin-bottom:14px">下课回家后 19:30，或晚饭前 17:30 —— 固定时间比「想起来再做」有效得多。</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <span style="font-size:14.5px;font-weight:600">提醒时间</span>
+            <input type="time" id="remind-time" style="padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;background:#fff;color:var(--ink)">
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm" id="btn-ics">导出 15 天日历提醒</button>
+            <button class="btn sm ghost" id="btn-notify">开启浏览器通知</button>
+          </div>
+          <div class="hint" style="margin-top:10px">日历提醒由手机系统负责，最可靠；浏览器通知只在页面打开时生效。</div>
+        </div>
+        <div class="card">
+          <span class="tag">家长</span>
+          <h3 style="margin-top:8px">给家长看的报告</h3>
+          <p style="margin-bottom:14px">不用家长陪做每道题：一天结束后看一眼报告，就知道哪科在拖后腿、明天先补哪块。</p>
+          <a class="btn sm ghost" href="report.html">打开学习报告 →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 路线预览 -->
+    <section class="sect">
+      <div class="sect-head">
+        <div>
+          <h2>15 天，三个阶段</h2>
+          <p>摸底 → 分项突破 → 限时模考与错题收口</p>
+        </div>
+        <a class="more" href="plan.html">完整路线 →</a>
+      </div>
+      <div class="grid g3">
+        <div class="card">
+          <div class="pill gold">Day 1–5</div>
+          <h3 style="margin-top:10px">先把基本功补齐</h3>
+          <p>摸底看清起点；词汇辨析、语法时态、阅读找证据、分数与周长面积，一天一个重点。</p>
+        </div>
+        <div class="card">
+          <div class="pill gold">Day 6–10</div>
+          <h3 style="margin-top:10px">按科目拆开打</h3>
+          <p>Day 7 第一次限时周测；之后专攻应用题、长篇阅读、语文阅读与改写。</p>
+        </div>
+        <div class="card">
+          <div class="pill gold">Day 11–15</div>
+          <h3 style="margin-top:10px">全真模考 + 错题收口</h3>
+          <p>Day 14 全真模考，最后一天只做错题和面试口述，不再刷新题。</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="fl">© <span id="foot-year"></span> G4 15 天备考 · 题库为自编练习，非校方真题</div>
+    <div class="flinks">
+      <a href="plan.html">15 天计划</a>
+      <a href="wrong.html">错题本</a>
+      <a href="report.html">学习报告</a>
+      <a href="info.html">资料与设置</a>
+    </div>
+  </div>
+</footer>
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  var A = window.App, S = A.S;
+  var idx = A.todayIdx(), day = A.DAYS[idx - 1];
+  var s = A.dayScore(idx), t = A.totalStats();
+
+  document.getElementById('cta-start').href = 'quiz.html?day=' + idx;
+
+  document.getElementById('p-day').innerHTML = 'Day ' + idx + '<small>/15</small>';
+  document.getElementById('p-today').innerHTML = s.ans + '<small>/' + s.all + ' 题</small>';
+  document.getElementById('p-pct').innerHTML = t.pct + '<small>%</small>';
+  document.getElementById('p-bar').style.width = t.pct + '%';
+  document.getElementById('p-left').innerHTML = A.countdown() + '<small>天</small>';
+
+  var d = new Date();
+  document.getElementById('today-date').textContent =
+    (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日 · 第 ' + idx + ' 天 / 共 15 天' +
+    (A.dayDone(idx) ? ' · 今天已完成 ✓' : '');
+
+  var pct = s.all ? Math.round(s.ans / s.all * 100) : 0;
+  var circ = 2 * Math.PI * 31, off = circ * (1 - pct / 100);
+  var o = day.output;
+  document.getElementById('today-card').innerHTML =
+    '<div style="display:flex;gap:16px;align-items:flex-start">' +
+      '<div class="ring"><svg width="78" height="78">' +
+        '<circle cx="39" cy="39" r="31" stroke="#e8ecf4" stroke-width="7" fill="none"/>' +
+        '<circle cx="39" cy="39" r="31" stroke="#c8a45a" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="' + circ + '" stroke-dashoffset="' + off + '"/>' +
+      '</svg><div class="pct">' + pct + '%<small>今日</small></div></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.06em">DAY ' + idx + ' / 15　约 ' + day.minutes + ' 分钟</div>' +
+        '<div style="font-size:18px;font-weight:800;margin:4px 0 8px;line-height:1.35">' + A.esc(day.title) + '</div>' +
+        '<div>' + day.focus.map(function (f) { return '<span class="pill">' + A.esc(f) + '</span>'; }).join(' ') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="goldline" style="margin:16px 0 0"></div>' +
+    '<div style="font-size:14px;color:#3d4a5e;line-height:1.75;margin-top:14px">' + A.esc(day.warmup) + '</div>' +
+    (o ? '<div style="margin-top:14px;padding:13px;background:#f7f9fd;border-radius:12px">' +
+      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><span class="pill gold">输出任务</span></div>' +
+      '<div style="font-weight:700;font-size:15px">' + A.esc(o.title) + '</div>' +
+      '<div class="hint" style="margin-top:4px">' + A.esc(o.prompt) + '</div></div>' : '') +
+    '<div style="margin-top:16px"><a class="btn block" href="quiz.html?day=' + idx + '">' +
+      (s.ans > 0 ? '继续练习（已答 ' + s.ans + '/' + s.all + '）' : '开始今天的 ' + s.all + ' 道题') +
+    '</a></div>';
+
+  var rt = document.getElementById('remind-time');
+  rt.value = S.reminderTime;
+  rt.addEventListener('change', function () {
+    S.reminderTime = rt.value || '19:30'; A.save();
+    A.toast('提醒时间已设为 ' + S.reminderTime + '，重新导出日历即可生效');
+  });
+  document.getElementById('btn-ics').addEventListener('click', A.exportICS);
+  document.getElementById('btn-notify').addEventListener('click', A.enableNotif);
+})();
+</script>
+</body>
+</html>

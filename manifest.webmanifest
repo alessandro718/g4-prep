@@ -1,0 +1,14 @@
+{
+  "name": "G4 15天备考",
+  "short_name": "G4 备考",
+  "description": "15 天分科练习计划：每天 10 题，自动判分、错题本、家长报告与日历提醒。",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16305a",
+  "theme_color": "#16305a",
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

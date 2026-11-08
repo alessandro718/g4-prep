@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<title>错题本 · G4 备考</title>
+</head>
+<body data-page="wrong">
+<header class="site-head" id="site-head"></header>
+
+<main>
+  <div class="wrap" style="max-width:860px">
+    <div class="sect-head" style="margin-top:0">
+      <div>
+        <h2>错题本</h2>
+        <p id="wrong-sum">—</p>
+      </div>
+      <a class="more" href="quiz.html">继续做题 →</a>
+    </div>
+
+    <div id="filters" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div id="wrong-list"></div>
+
+    <div class="card" style="margin-top:18px">
+      <h3>错题怎么用</h3>
+      <p style="margin-top:6px">不要让孩子「看一遍答案」就过。让他指着题目，把「我为什么选这个」和「正确思路是什么」讲给你听；讲不通的，就是明天要重做的那道。</p>
+      <div class="hint" style="margin-top:10px">同一道题连续两次做对，才算过关。</div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="fl">© <span id="foot-year"></span> G4 15 天备考 · 题库为自编练习，非校方真题</div>
+    <div class="flinks"><a href="index.html">首页</a><a href="plan.html">15 天计划</a><a href="report.html">学习报告</a></div>
+  </div>
+</footer>
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  var A = window.App, S = A.S, SUBJ = A.SUBJ;
+  var items = A.wrongItems();
+  var filter = 'all';
+
+  document.getElementById('wrong-sum').textContent = items.length
+    ? '共 ' + items.length + ' 道错题 · 建议每天先重做 5 道'
+    : '暂无错题';
+
+  var cats = [['all', '全部'], ['eng', '英语'], ['math', '数学'], ['chi', '语文']];
+  document.getElementById('filters').innerHTML = cats.map(function (c) {
+    var n = c[0] === 'all' ? items.length : items.filter(function (i) { return i.q.subject === c[0]; }).length;
+    return '<button class="pill" data-f="' + c[0] + '" style="cursor:pointer;border:none;font-size:13px;padding:7px 14px">' + c[1] + ' ' + n + '</button>';
+  }).join('');
+
+  function render() {
+    var list = items.filter(function (i) { return filter === 'all' || i.q.subject === filter; });
+    document.querySelectorAll('[data-f]').forEach(function (b) {
+      var on = b.dataset.f === filter;
+      b.style.background = on ? '#16305a' : '#eef2f9';
+      b.style.color = on ? '#fff' : '#3c5279';
+    });
+    if (!list.length) {
+      document.getElementById('wrong-list').innerHTML = items.length
+        ? '<div class="empty"><div class="big">◎</div>这个科目没有错题。</div>'
+        : '<div class="empty"><div class="big">◎</div>还没有错题。<br>做完一套题，错题会自动出现在这里。<div style="margin-top:16px"><a class="btn sm" href="quiz.html">去做今天的题</a></div></div>';
+      return;
+    }
+    var byDay = {};
+    list.forEach(function (it) { (byDay[it.day] = byDay[it.day] || []).push(it); });
+    var html = '';
+    Object.keys(byDay).sort(function (a, b) { return a - b; }).forEach(function (dayNo) {
+      var arr = byDay[dayNo];
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:18px 2px 10px">' +
+        '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted)">DAY ' + dayNo + ' · ' + arr.length + ' 道错题</div>' +
+        '<a href="quiz.html?day=' + dayNo + '" style="font-size:13px;font-weight:600">重做这一天 →</a>' +
+      '</div>';
+      arr.forEach(function (it) {
+        var q = it.q, a = it.a;
+        var right = q.type === 'fill' ? (q.answerText || q.answer) : q.options[q.answer];
+        var mine = q.type === 'fill' ? a.v : q.options[a.v];
+        html += '<div class="card tight" style="margin-bottom:10px">' +
+          '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">' +
+            '<span class="pill ' + q.subject + '">' + SUBJ[q.subject] + '</span>' +
+            '<span class="hint" style="font-size:11.5px">' + A.esc(q.skill || '') + '</span>' +
+            '<span class="hint" style="font-size:11.5px;margin-left:auto">Q' + (it.i + 1) + '</span>' +
+          '</div>' +
+          '<div style="font-size:15.5px;line-height:1.7;font-weight:500' + (q.subject === 'eng' ? ';font-family:Georgia,serif' : '') + '">' + A.esc(q.stem) + '</div>' +
+          '<div style="margin-top:10px;font-size:13.5px;line-height:1.6">' +
+            '<div style="color:var(--bad)">你选：' + A.esc(mine || '—') + '</div>' +
+            '<div style="color:var(--ok);margin-top:2px">正确：' + A.esc(right) + '</div>' +
+          '</div>' +
+          '<div class="explain show">' + q.explain + '</div>' +
+        '</div>';
+      });
+    });
+    document.getElementById('wrong-list').innerHTML = html;
+  }
+
+  document.getElementById('filters').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-f]');
+    if (!b) return;
+    filter = b.dataset.f;
+    render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
