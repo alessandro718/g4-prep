@@ -1,13 +1,16 @@
 /* =========================================================
    G4 15天备考 · 站点核心
-   纯前端：进度存 localStorage，无后端、无账号
+   纯前端：进度存 localStorage，按「学习档案」隔离
    ========================================================= */
 (function (global) {
   'use strict';
 
+  var AUTH = global.Auth || null;
+  if (AUTH && AUTH.redirecting) return;   // 未登录已跳转，不再初始化
+
   var DAYS = global.DAYS || [];
   var SUBJ = { eng: '英语', math: '数学', chi: '语文' };
-  var DB = 'shsid_g4_v1';          // 与旧版一致，升级不丢进度
+  var DB = AUTH ? AUTH.progressKey() : 'shsid_g4_v1';   // 每个档案一个独立进度键
   var TOTAL_DAYS = 15;
 
   /* ---------- 基础工具 ---------- */
@@ -141,6 +144,17 @@
     return left < 0 ? 0 : left;
   }
 
+  function whoHTML() {
+    if (!AUTH) return '';
+    var c = AUTH.current();
+    if (!c) {
+      return '<a class="who" href="login.html"><span class="who-av guest">登</span><span class="who-nm">登录</span></a>';
+    }
+    return '<a class="who" href="account.html" title="账号与档案：' + esc(c.profile.name) + '">' +
+      '<span class="who-av" style="background:' + esc(c.profile.color) + '">' + esc(c.profile.emoji) + '</span>' +
+      '<span class="who-nm">' + esc(c.profile.name) + '</span></a>';
+  }
+
   function renderChrome(active) {
     var head = document.getElementById('site-head');
     if (head) {
@@ -154,6 +168,7 @@
           '<div class="head-right">' +
             '<span class="cd-chip">距考试 <b>' + countdown() + '</b> 天</span>' +
             '<a class="btn sm head-cta" href="quiz.html?day=' + todayIdx() + '">开始今天</a>' +
+            whoHTML() +
           '</div>' +
         '</div>';
     }
@@ -344,7 +359,12 @@
 
   /* ---------- 导出 ---------- */
   global.App = {
-    DAYS: DAYS, SUBJ: SUBJ, S: S, DB: DB, TOTAL_DAYS: TOTAL_DAYS,
+    DAYS: DAYS, SUBJ: SUBJ, S: S, DB: DB, TOTAL_DAYS: TOTAL_DAYS, AUTH: AUTH,
+    currentProfile: function () { return AUTH ? AUTH.profile() : null; },
+    switchProfile: function (pid) {
+      if (AUTH && AUTH.switchProfile(pid)) { location.href = 'index.html'; return true; }
+      return false;
+    },
     pad: pad, fmtD: fmtD, parseD: parseD, addDays: addDays, diffDays: diffDays, esc: esc, clamp: clamp,
     save: save, reload: function () { S = load(); global.App.S = S; },
     todayIdx: todayIdx, dayScore: dayScore, dayDone: dayDone, totalStats: totalStats,

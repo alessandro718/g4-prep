@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/auth.css">
+<script src="assets/js/auth.js"></script>
+<title>账号与档案 · G4 备考</title>
+</head>
+<body data-page="account">
+<header class="site-head" id="site-head"></header>
+
+<main class="acc-wrap">
+
+  <div class="acc-hero">
+    <div class="ah-av" id="hero-av">🦁</div>
+    <div class="ah-info">
+      <div class="ah-name" id="hero-name">我的档案</div>
+      <div class="ah-meta" id="hero-meta">Day 1 / 15</div>
+    </div>
+    <button class="ah-btn" id="hero-go">继续学习</button>
+  </div>
+
+  <section class="acc-sec">
+    <h2>学习档案 <span id="slot-count">1 / 3</span></h2>
+    <div class="card" style="padding:12px">
+      <div id="slots"></div>
+      <div class="hint" style="margin:4px 2px 0;font-size:12px">
+        每个档案的进度、错题本和报告完全独立。删除档案会一并删掉它的学习记录。
+      </div>
+    </div>
+  </section>
+
+  <section class="acc-sec">
+    <h2>数据备份 <span>换设备时用</span></h2>
+    <div class="card">
+      <div class="kv"><span>当前档案记录</span><b id="data-meta">—</b></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn ghost sm" id="btn-export">导出当前档案</button>
+        <button class="btn ghost sm" id="btn-import">导入备份</button>
+        <input type="file" id="file-import" accept=".json,application/json" hidden>
+      </div>
+      <div class="hint" style="margin-top:10px;font-size:12px">
+        导出的是一个 .json 文件，里面只有当前档案的答题记录。换手机后登录同一个账号，用「导入备份」恢复。
+      </div>
+    </div>
+  </section>
+
+  <section class="acc-sec">
+    <h2>账号</h2>
+    <div class="card">
+      <div class="kv"><span>账号</span><b id="acc-user">—</b></div>
+      <div class="kv"><span>称呼</span><b id="acc-name">—</b></div>
+      <div class="kv"><span>注册时间</span><b id="acc-since">—</b></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn ghost sm" id="btn-pw">修改密码</button>
+        <button class="btn ghost sm" id="btn-logout">退出登录</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="acc-sec">
+    <h2>重置</h2>
+    <div class="card danger-zone">
+      <div style="font-size:13px;color:#5a6a83;line-height:1.7">
+        只清空<strong>当前档案</strong>的答题记录，档案本身和账号都保留。可以先用上面的「导出」留个备份。
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn ghost sm" id="btn-reset">清空当前档案进度</button>
+      </div>
+    </div>
+  </section>
+
+  <div style="margin-top:26px;text-align:center;font-size:12px;color:#8b96a8;line-height:1.8">
+    账号与学习记录保存在本机浏览器，不会上传服务器。<br>
+    清理浏览器数据或换设备前，记得先导出备份。
+  </div>
+</main>
+
+<nav class="tabbar" id="site-tabbar"></nav>
+
+<!-- 编辑档案 -->
+<div class="modal" id="m-edit">
+  <div class="modal-box">
+    <h3>编辑档案</h3>
+    <p>名字最多 12 个字，头像和颜色随时能改。</p>
+    <div class="emoji-row" id="m-emoji"></div>
+    <div class="swatch-row" id="m-color"></div>
+    <input class="inp" id="m-name" maxlength="12" placeholder="档案名字">
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="m-edit">取消</button>
+      <button class="btn" id="m-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密码 -->
+<div class="modal" id="m-pw">
+  <div class="modal-box">
+    <h3>修改密码</h3>
+    <p>改完下次登录用新密码，当前登录状态不会掉。</p>
+    <div class="field">
+      <label for="pw-old">原密码</label>
+      <input class="inp" id="pw-old" type="password" autocomplete="current-password" placeholder="当前密码">
+    </div>
+    <div class="field">
+      <label for="pw-new">新密码</label>
+      <input class="inp" id="pw-new" type="password" autocomplete="new-password" placeholder="至少 6 位">
+    </div>
+    <div class="field">
+      <label for="pw-new2">确认新密码</label>
+      <input class="inp" id="pw-new2" type="password" autocomplete="new-password" placeholder="再输一遍">
+    </div>
+    <div class="auth-err" id="pw-err"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="m-pw">取消</button>
+      <button class="btn" id="pw-save">确认修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除档案 -->
+<div class="modal" id="m-del">
+  <div class="modal-box">
+    <h3>删除这个档案？</h3>
+    <p id="del-text">档案里的答题记录会一起删除，无法恢复。建议先导出备份。</p>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="m-del">我再想想</button>
+      <button class="btn" id="del-ok" style="background:#b23a2c">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- 清空进度 -->
+<div class="modal" id="m-reset">
+  <div class="modal-box">
+    <h3>清空当前档案进度？</h3>
+    <p>会删除这个档案的全部答题记录，从 Day 1 重新开始。账号和其他档案不受影响。</p>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="m-reset">取消</button>
+      <button class="btn" id="reset-ok" style="background:#b23a2c">确认清空</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.Auth, App = window.App, S = App.S;
+  var $ = function (id) { return document.getElementById(id); };
+  var IC = {
+    swap: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>',
+    bin: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>'
+  };
+
+  var editPid = null, delPid = null;
+  var pickedEmoji = '', pickedColor = '';
+
+  /* ---------- 模态框 ---------- */
+  function open(id) { $(id).classList.add('show'); }
+  function close(id) { $(id).classList.remove('show'); }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (b) {
+    b.addEventListener('click', function () { close(b.getAttribute('data-close')); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.modal'), function (m) {
+    m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('show'); });
+  });
+
+  /* ---------- 进度摘要 ---------- */
+  function metaFor(pid) {
+    var raw = null;
+    try { raw = localStorage.getItem(A.progressKey(pid)); } catch (e) {}
+    var st = {};
+    try { st = JSON.parse(raw || '{}') || {}; } catch (e) { st = {}; }
+    var ans = 0;
+    if (st.answers) { for (var k in st.answers) if (Object.prototype.hasOwnProperty.call(st.answers, k)) ans++; }
+    var day = 1;
+    if (st.startDate) {
+      var p = String(st.startDate).split('-').map(Number);
+      var s = new Date(p[0], p[1] - 1, p[2]);
+      var t = new Date(); t.setHours(0, 0, 0, 0);
+      day = Math.max(1, Math.min(15, Math.floor((t - s) / 86400000) + 1));
+    }
+    return { day: day, ans: ans };
+  }
+
+  /* ---------- 渲染 ---------- */
+  function render() {
+    var c = A.current();
+    if (!c) { location.replace('login.html'); return; }
+    var u = c.user, cur = c.profile;
+    var t = App.totalStats();
+
+    $('hero-av').textContent = cur.emoji;
+    $('hero-av').style.background = cur.color;
+    $('hero-name').textContent = cur.name;
+    $('hero-meta').textContent = 'Day ' + App.todayIdx() + ' / 15 · 已答 ' + t.ans + ' 题 · 正确率 ' + t.pct + '%';
+    $('hero-go').onclick = function () { location.href = 'quiz.html?day=' + App.todayIdx(); };
+
+    /* 槽位 */
+    var html = u.profiles.map(function (p) {
+      var m = metaFor(p.id), on = p.id === cur.id;
+      return '<div class="slot' + (on ? ' cur' : '') + '">' +
+        '<span class="sl-av" style="background:' + p.color + '">' + p.emoji + '</span>' +
+        '<span class="sl-info">' +
+          '<span class="sl-name">' + A.esc(p.name) + (on ? '<em>当前</em>' : '') + '</span>' +
+          '<span class="sl-meta">Day ' + m.day + ' / 15 · 已答 ' + m.ans + ' 题</span>' +
+        '</span>' +
+        '<span class="sl-ops">' +
+          (on ? '' : '<button class="icobtn" data-sw="' + p.id + '" title="切换到该档案">' + IC.swap + '</button>') +
+          '<button class="icobtn" data-ed="' + p.id + '" title="编辑">' + IC.pen + '</button>' +
+          (u.profiles.length > 1
+            ? '<button class="icobtn danger" data-del="' + p.id + '" title="删除">' + IC.bin + '</button>' : '') +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    if (u.profiles.length < A.MAX_PROFILES) {
+      html += '<button class="slot-empty" id="slot-add">＋ 新建档案（还剩 ' +
+        (A.MAX_PROFILES - u.profiles.length) + ' 个名额）</button>';
+    }
+    $('slots').innerHTML = html;
+    $('slot-count').textContent = u.profiles.length + ' / ' + A.MAX_PROFILES;
+
+    Array.prototype.forEach.call($('slots').querySelectorAll('[data-sw]'), function (b) {
+      b.onclick = function () {
+        if (A.switchProfile(b.getAttribute('data-sw'))) location.reload();
+      };
+    });
+    Array.prototype.forEach.call($('slots').querySelectorAll('[data-ed]'), function (b) {
+      b.onclick = function () { openEdit(b.getAttribute('data-ed')); };
+    });
+    Array.prototype.forEach.call($('slots').querySelectorAll('[data-del]'), function (b) {
+      b.onclick = function () {
+        delPid = b.getAttribute('data-del');
+        var p = u.profiles.filter(function (x) { return x.id === delPid; })[0];
+        $('del-text').textContent = '「' + (p ? p.name : '这个档案') +
+          '」里的答题记录会一起删除，无法恢复。建议先导出备份。';
+        open('m-del');
+      };
+    });
+    var add = $('slot-add');
+    if (add) add.onclick = function () { openEdit(null); };
+
+    /* 数据 & 账号 */
+    $('data-meta').textContent = t.ans + ' 题记录 · ' + t.done + '/15 天完成';
+    $('acc-user').textContent = u.username;
+    $('acc-name').textContent = u.name || '未填';
+    $('acc-since').textContent = new Date(u.createdAt).toLocaleDateString('zh-CN');
+  }
+
+  /* ---------- 编辑 / 新建档案 ---------- */
+  function openEdit(pid) {
+    editPid = pid;
+    var c = A.current();
+    var p = pid ? c.user.profiles.filter(function (x) { return x.id === pid; })[0] : null;
+    pickedEmoji = p ? p.emoji : A.EMOJIS[c.user.profiles.length % A.EMOJIS.length];
+    pickedColor = p ? p.color : A.COLORS[c.user.profiles.length % A.COLORS.length];
+    $('m-name').value = p ? p.name : ('档案 ' + (c.user.profiles.length + 1));
+    $('m-emoji').innerHTML = A.EMOJIS.map(function (em) {
+      return '<button type="button" data-em="' + em + '" class="' + (em === pickedEmoji ? 'on' : '') + '">' + em + '</button>';
+    }).join('');
+    $('m-color').innerHTML = A.COLORS.map(function (co) {
+      return '<button type="button" data-co="' + co + '" class="' + (co === pickedColor ? 'on' : '') + '" style="background:' + co + '"></button>';
+    }).join('');
+    Array.prototype.forEach.call($('m-emoji').querySelectorAll('[data-em]'), function (b) {
+      b.onclick = function () {
+        pickedEmoji = b.getAttribute('data-em');
+        Array.prototype.forEach.call($('m-emoji').children, function (x) { x.classList.toggle('on', x === b); });
+      };
+    });
+    Array.prototype.forEach.call($('m-color').querySelectorAll('[data-co]'), function (b) {
+      b.onclick = function () {
+        pickedColor = b.getAttribute('data-co');
+        Array.prototype.forEach.call($('m-color').children, function (x) { x.classList.toggle('on', x === b); });
+      };
+    });
+    open('m-edit');
+  }
+
+  $('m-save').onclick = function () {
+    var name = $('m-name').value.trim();
+    if (!name) { App.toast('给档案起个名字'); return; }
+    try {
+      if (editPid) {
+        A.updateProfile(editPid, { name: name, emoji: pickedEmoji, color: pickedColor });
+      } else {
+        var p = A.addProfile(name);
+        A.updateProfile(p.id, { emoji: pickedEmoji, color: pickedColor });
+      }
+      close('m-edit');
+      App.toast(editPid ? '档案已更新' : '新档案已创建，进度从 Day 1 开始');
+      setTimeout(function () { location.reload(); }, 400);
+    } catch (e) {
+      alert(e.message || '保存失败');
+    }
+  };
+
+  /* ---------- 删除 ---------- */
+  $('del-ok').onclick = function () {
+    try {
+      A.removeProfile(delPid, true);
+      close('m-del');
+      App.toast('档案已删除');
+      setTimeout(function () { location.reload(); }, 350);
+    } catch (e) {
+      alert(e.message || '删除失败');
+    }
+  };
+
+  /* ---------- 改密码 ---------- */
+  $('btn-pw').onclick = function () {
+    $('pw-old').value = ''; $('pw-new').value = ''; $('pw-new2').value = '';
+    $('pw-err').classList.remove('show');
+    open('m-pw');
+  };
+  $('pw-save').onclick = function () {
+    var o = $('pw-old').value, n1 = $('pw-new').value, n2 = $('pw-new2').value;
+    var box = $('pw-err');
+    function bad(m) { box.textContent = m; box.classList.add('show'); }
+    box.classList.remove('show');
+    if (!o) return bad('请输入原密码');
+    if (n1.length < 6) return bad('新密码至少 6 位');
+    if (n1 !== n2) return bad('两次输入的新密码不一样');
+    A.changePassword(o, n1).then(function () {
+      close('m-pw');
+      App.toast('密码已修改');
+    }).catch(function (e) { bad(e.message || '修改失败'); });
+  };
+
+  /* ---------- 退出 ---------- */
+  $('btn-logout').onclick = function () {
+    if (!confirm('退出登录？学习记录会保留，重新登录即可继续。')) return;
+    A.logout();
+    location.replace('login.html');
+  };
+
+  /* ---------- 导出 / 导入 ---------- */
+  $('btn-export').onclick = function () {
+    var c = A.current();
+    var data = A.exportProfile(c.profile.id);
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'G4备考-' + c.profile.name + '-' + App.fmtD(new Date()) + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+    App.toast('已导出，保存好这个文件');
+  };
+
+  $('btn-import').onclick = function () { $('file-import').click(); };
+  $('file-import').onchange = function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var obj = JSON.parse(String(fr.result));
+        if (!confirm('导入会覆盖当前档案的答题记录，确定继续？')) return;
+        A.importProfile(A.current().profile.id, obj);
+        App.toast('导入成功，正在刷新');
+        setTimeout(function () { location.reload(); }, 500);
+      } catch (e) {
+        alert('导入失败：' + (e.message || '文件格式不对'));
+      }
+    };
+    fr.readAsText(f);
+    this.value = '';
+  };
+
+  /* ---------- 清空 ---------- */
+  $('btn-reset').onclick = function () { open('m-reset'); };
+  $('reset-ok').onclick = function () {
+    try { localStorage.removeItem(App.DB); } catch (e) {}
+    App.toast('已清空，正在重新开始');
+    setTimeout(function () { location.href = 'index.html'; }, 400);
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

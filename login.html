@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16305a">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="apple-touch-icon" href="assets/img/icon-192.png">
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/auth.css">
+<script src="assets/js/auth.js"></script>
+<title>登录 · G4 15 天备考</title>
+</head>
+<body class="auth-body">
+
+<div class="auth-wrap">
+  <aside class="auth-side">
+    <div class="as-brand">G4 <b>15 天备考</b></div>
+    <div class="as-kicker">One account · Three profiles</div>
+    <h2 class="as-title">一个账号<br>三个<em>学习档案</em></h2>
+    <p class="as-lead">家里两个孩子一起备考，或者想给同一个孩子分「基础轮 / 冲刺轮」两套进度，都不用换浏览器。</p>
+    <ul class="as-list">
+      <li><i>✓</i><span>每个档案独立记进度、错题和报告，互不干扰</span></li>
+      <li><i>✓</i><span>登录一次保持 30 天，手机上直接打开就能做题</span></li>
+      <li><i>✓</i><span>支持导出备份，换设备时一键导入</span></li>
+    </ul>
+    <div class="as-foot">数据保存在本机浏览器 · 不上传服务器</div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="auth-topbar">G4 <b>15 天备考</b></div>
+
+      <!-- ========== 登录 ========== -->
+      <section id="v-login">
+        <h1 class="ac-title">欢迎回来</h1>
+        <p class="ac-sub">登录后继续你的 15 天备考计划。</p>
+
+        <div class="seg" id="seg">
+          <button type="button" class="on" data-view="login">登录</button>
+          <button type="button" data-view="reg">注册</button>
+        </div>
+
+        <div class="auth-err" id="err-login"></div>
+        <form id="f-login" novalidate>
+          <div class="field">
+            <label for="li-user">账号</label>
+            <input class="inp" id="li-user" name="username" autocomplete="username"
+                   placeholder="手机号 / 邮箱 / 昵称" maxlength="24" required>
+          </div>
+          <div class="field">
+            <label for="li-pass">密码</label>
+            <div class="pw-wrap">
+              <input class="inp" id="li-pass" name="password" type="password"
+                     autocomplete="current-password" placeholder="6 位以上" maxlength="64" required>
+              <button type="button" class="pw-eye" data-pw="li-pass">显示</button>
+            </div>
+          </div>
+          <button class="btn gold auth-submit" id="btn-login" type="submit">登录</button>
+        </form>
+        <div class="auth-alt">还没有账号？<a data-view="reg">花 20 秒注册一个 →</a></div>
+        <div class="auth-note">
+          <b>关于数据：</b>账号和学习记录都保存在这台设备的浏览器里，不会上传服务器。换设备或清理浏览器数据会丢失，可在<a href="account.html" style="font-weight:700">账号中心</a>导出备份。
+        </div>
+      </section>
+
+      <!-- ========== 注册 ========== -->
+      <section id="v-reg" hidden>
+        <h1 class="ac-title">创建账号</h1>
+        <p class="ac-sub">注册后可以建最多 3 个学习档案，每个档案进度独立。</p>
+
+        <div class="auth-err" id="err-reg"></div>
+        <form id="f-reg" novalidate>
+          <div class="field">
+            <label for="rg-user">账号 <span class="tip">手机号、邮箱或昵称都行</span></label>
+            <input class="inp" id="rg-user" name="username" autocomplete="username"
+                   placeholder="3–24 位，可用中文" maxlength="24" required>
+          </div>
+          <div class="field">
+            <label for="rg-name">称呼 <span class="tip">可选</span></label>
+            <input class="inp" id="rg-name" name="nickname" autocomplete="nickname"
+                   placeholder="例如：乐乐妈妈" maxlength="20">
+          </div>
+          <div class="field">
+            <label for="rg-pass">密码</label>
+            <div class="pw-wrap">
+              <input class="inp" id="rg-pass" name="password" type="password"
+                     autocomplete="new-password" placeholder="至少 6 位" maxlength="64" required>
+              <button type="button" class="pw-eye" data-pw="rg-pass">显示</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rg-pass2">确认密码</label>
+            <input class="inp" id="rg-pass2" type="password" autocomplete="new-password"
+                   placeholder="再输一遍" maxlength="64" required>
+          </div>
+          <button class="btn gold auth-submit" id="btn-reg" type="submit">创建账号</button>
+        </form>
+        <div class="auth-alt">已经有账号？<a data-view="login">直接登录 →</a></div>
+      </section>
+
+      <!-- ========== 选择档案 ========== -->
+      <section id="v-pick" hidden>
+        <h1 class="ac-title">选一个学习档案</h1>
+        <p class="ac-sub">每个档案的进度、错题和报告都是分开的。</p>
+        <div class="pick-grid" id="pick-grid"></div>
+        <button type="button" class="pcard pc-empty" id="pick-add">＋ 新建一个档案</button>
+        <div class="auth-alt" style="margin-top:20px">
+          <a id="pick-out">退出登录</a>
+        </div>
+      </section>
+
+      <!-- ========== 建立 / 编辑档案 ========== -->
+      <section id="v-setup" hidden>
+        <h1 class="ac-title" id="setup-title">给档案起个名字</h1>
+        <p class="ac-sub" id="setup-sub">这个名字只在本机显示，可以随时改。</p>
+
+        <div class="field">
+          <label>选个头像</label>
+          <div class="emoji-row" id="setup-emoji"></div>
+        </div>
+        <div class="field">
+          <label>主题色</label>
+          <div class="swatch-row" id="setup-color"></div>
+        </div>
+        <div class="field">
+          <label for="setup-name">档案名字</label>
+          <input class="inp" id="setup-name" maxlength="12" placeholder="例如：乐乐 / 冲刺轮">
+        </div>
+        <button class="btn gold auth-submit" id="setup-save">保存并开始</button>
+        <div class="auth-alt"><a id="setup-back">← 返回</a></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var A = window.Auth;
+  var $ = function (id) { return document.getElementById(id); };
+  var next = (function () {
+    var n = new URLSearchParams(location.search).get('next') || '';
+    // 只允许站内相对页面，防开放重定向
+    if (/^[a-z0-9_\-.]+\.html(\?[^#]*)?(#.*)?$/i.test(n)) return n;
+    return '';
+  })();
+
+  var setupPid = null;      // null = 新建；有值 = 编辑现有
+  var pickedEmoji = '', pickedColor = '';
+
+  /* ---------- 视图切换 ---------- */
+  function view(name) {
+    ['login', 'reg', 'pick', 'setup'].forEach(function (k) {
+      var el = $('v-' + k);
+      if (el) el.hidden = (k !== name);
+    });
+    $('seg').style.display = (name === 'login' || name === 'reg') ? '' : 'none';
+    if (name === 'login' || name === 'reg') {
+      var on = $('seg').querySelector('[data-view="' + name + '"]');
+      Array.prototype.forEach.call($('seg').children, function (b) {
+        b.classList.toggle('on', b === on);
+      });
+    }
+    window.scrollTo(0, 0);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      view(el.getAttribute('data-view'));
+      clearErr();
+    });
+  });
+
+  function go(dest) { location.replace(dest || next || 'index.html'); }
+
+  function err(box, msg) {
+    var el = $(box);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearErr() {
+    ['err-login', 'err-reg'].forEach(function (k) {
+      var el = $(k); if (el) { el.textContent = ''; el.classList.remove('show'); }
+    });
+  }
+  function busy(btn, on, text) {
+    btn.disabled = on;
+    if (on) { btn.dataset.t = btn.textContent; btn.textContent = text; }
+    else if (btn.dataset.t) { btn.textContent = btn.dataset.t; }
+  }
+
+  /* ---------- 显示密码 ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('.pw-eye'), function (b) {
+    b.addEventListener('click', function () {
+      var inp = $(b.getAttribute('data-pw'));
+      var show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      b.textContent = show ? '隐藏' : '显示';
+    });
+  });
+
+  /* ---------- 登录 ---------- */
+  $('f-login').addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearErr();
+    var u = $('li-user').value.trim(), p = $('li-pass').value;
+    if (!u) return err('err-login', '请先填账号');
+    if (!p) return err('err-login', '请先填密码');
+    var btn = $('btn-login');
+    busy(btn, true, '登录中…');
+    A.login(u, p).then(function () {
+      busy(btn, false);
+      var c = A.current();
+      if (c.user.profiles.length > 1) showPick();
+      else go(); 
+    }).catch(function (e2) {
+      busy(btn, false);
+      err('err-login', e2.message || '登录失败，请重试');
+    });
+  });
+
+  /* ---------- 注册 ---------- */
+  $('f-reg').addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearErr();
+    var u = $('rg-user').value.trim(), n = $('rg-name').value.trim();
+    var p = $('rg-pass').value, p2 = $('rg-pass2').value;
+    if (!u) return err('err-reg', '请先填账号');
+    if (p.length < 6) return err('err-reg', '密码至少 6 位');
+    if (p !== p2) return err('err-reg', '两次输入的密码不一样');
+    var btn = $('btn-reg');
+    busy(btn, true, '创建中…');
+    A.register(u, p, n).then(function () {
+      busy(btn, false);
+      showSetup(A.current().profile.id, 'first');
+    }).catch(function (e2) {
+      busy(btn, false);
+      err('err-reg', e2.message || '注册失败，请重试');
+    });
+  });
+
+  /* ---------- 档案选择 ---------- */
+  function pmeta(pid) {
+    var raw = null;
+    try { raw = localStorage.getItem(A.progressKey(pid)); } catch (e) {}
+    var st = {};
+    try { st = JSON.parse(raw || '{}') || {}; } catch (e) { st = {}; }
+    var ans = 0;
+    if (st.answers) { for (var k in st.answers) if (Object.prototype.hasOwnProperty.call(st.answers, k)) ans++; }
+    var day = 1;
+    if (st.startDate) {
+      var p = String(st.startDate).split('-').map(Number);
+      var s = new Date(p[0], p[1] - 1, p[2]);
+      var t = new Date(); t.setHours(0, 0, 0, 0);
+      day = Math.floor((t - s) / 86400000) + 1;
+      day = Math.max(1, Math.min(15, day));
+    }
+    return ans ? ('Day ' + day + ' / 15 · 已答 ' + ans + ' 题') : '还没开始 · Day 1';
+  }
+
+  function showPick() {
+    var c = A.current();
+    if (!c) return view('login');
+    var grid = $('pick-grid');
+    grid.innerHTML = c.user.profiles.map(function (p) {
+      return '<button type="button" class="pcard" data-pid="' + p.id + '">' +
+        '<span class="pc-av" style="background:' + p.color + '">' + p.emoji + '</span>' +
+        '<span class="pc-info"><b>' + A.esc(p.name) + '</b><small>' + pmeta(p.id) + '</small></span>' +
+        '<span class="pc-go">→</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(grid.querySelectorAll('[data-pid]'), function (b) {
+      b.addEventListener('click', function () {
+        A.switchProfile(b.getAttribute('data-pid'));
+        go();
+      });
+    });
+    $('pick-add').disabled = c.user.profiles.length >= A.MAX_PROFILES;
+    $('pick-add').textContent = c.user.profiles.length >= A.MAX_PROFILES
+      ? '已达上限（3 个档案）' : '＋ 新建一个档案';
+    view('pick');
+  }
+
+  $('pick-add').addEventListener('click', function () {
+    if ($('pick-add').disabled) return;
+    showSetup(null, 'new');
+  });
+  $('pick-out').addEventListener('click', function () {
+    A.logout();
+    view('login');
+  });
+
+  /* ---------- 档案设置 ---------- */
+  function showSetup(pid, mode) {
+    setupPid = pid;
+    var c = A.current();
+    var p = c && c.profile ? c.profile : null;
+    var idx = c ? c.user.profiles.length : 0;
+    pickedEmoji = (pid && p) ? p.emoji : A.EMOJIS[idx % A.EMOJIS.length];
+    pickedColor = (pid && p) ? p.color : A.COLORS[idx % A.COLORS.length];
+
+    $('setup-title').textContent = mode === 'first' ? '给你的档案起个名字' : (pid ? '编辑档案' : '新建学习档案');
+    $('setup-sub').textContent = mode === 'first'
+      ? '第一个档案已经建好了，起个名字就能开始。以后最多可以再建 2 个。'
+      : (pid ? '改完立刻生效，进度不受影响。' : '新档案的进度从 Day 1 开始，和现有档案互不影响。');
+    $('setup-name').value = (pid && p) ? p.name : ('档案 ' + (idx + 1));
+
+    $('setup-emoji').innerHTML = A.EMOJIS.map(function (em) {
+      return '<button type="button" data-em="' + em + '" class="' + (em === pickedEmoji ? 'on' : '') + '">' + em + '</button>';
+    }).join('');
+    $('setup-color').innerHTML = A.COLORS.map(function (co) {
+      return '<button type="button" data-co="' + co + '" class="' + (co === pickedColor ? 'on' : '') + '" style="background:' + co + '"></button>';
+    }).join('');
+
+    Array.prototype.forEach.call($('setup-emoji').querySelectorAll('[data-em]'), function (b) {
+      b.addEventListener('click', function () {
+        pickedEmoji = b.getAttribute('data-em');
+        Array.prototype.forEach.call($('setup-emoji').children, function (x) { x.classList.toggle('on', x === b); });
+      });
+    });
+    Array.prototype.forEach.call($('setup-color').querySelectorAll('[data-co]'), function (b) {
+      b.addEventListener('click', function () {
+        pickedColor = b.getAttribute('data-co');
+        Array.prototype.forEach.call($('setup-color').children, function (x) { x.classList.toggle('on', x === b); });
+      });
+    });
+
+    $('setup-back').textContent = mode === 'first' ? '← 先随便用，稍后再改' : '← 返回';
+    $('setup-back').setAttribute('data-mode', mode || '');
+    view('setup');
+  }
+
+  $('setup-save').addEventListener('click', function () {
+    var name = $('setup-name').value.trim() || '我的档案';
+    try {
+      if (setupPid) {
+        A.updateProfile(setupPid, { name: name, emoji: pickedEmoji, color: pickedColor });
+      } else {
+        var p = A.addProfile(name);
+        A.updateProfile(p.id, { emoji: pickedEmoji, color: pickedColor });
+      }
+      go();
+    } catch (e2) {
+      alert(e2.message || '保存失败');
+    }
+  });
+
+  $('setup-back').addEventListener('click', function () {
+    var mode = this.getAttribute('data-mode');
+    if (mode === 'first') { go(); return; }
+    showPick();
+  });
+
+  /* ---------- 初始化 ---------- */
+  if (A.isLoggedIn()) {
+    var c0 = A.current();
+    if (c0.user.profiles.length > 1) showPick();
+    else go();
+  } else {
+    view('login');
+  }
+})();
+</script>
+</body>
+</html>
