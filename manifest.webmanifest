@@ -1,7 +1,7 @@
 {
   "name": "G4 15天备考",
   "short_name": "G4 备考",
-  "description": "15 天分科练习计划：每天 10 题，自动判分、错题本、家长报告与日历提醒。",
+  "description": "15 天分科练习计划：每天 20 题（基础 10 + 进阶 10），自动判分、错题本、家长报告与日历提醒；登录后最多 3 个学习档案。",
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
