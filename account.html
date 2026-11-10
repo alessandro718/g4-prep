@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/app.css">
 <link rel="stylesheet" href="assets/css/auth.css">
-<script src="assets/js/auth.js" data-api="https://ab81cf92b0a23499d.app.workbuddy.host" data-sharecode="POV3OFGOID"></script>
+<script src="assets/js/auth.js"></script>
 <title>账号与档案 · G4 备考</title>
 </head>
 <body data-page="account">
@@ -66,6 +66,21 @@
   </section>
 
   <section class="acc-sec">
+    <h2>安全与找回 <span>忘记密码时用</span></h2>
+    <div class="card">
+      <div class="kv"><span>安全问题</span><b id="sec-q">—</b></div>
+      <div class="kv"><span>恢复码</span><b id="sec-rec">—</b></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn ghost sm" id="btn-sec">设置安全问题</button>
+        <button class="btn ghost sm" id="btn-rec">生成恢复码</button>
+      </div>
+      <div class="hint" id="sec-hint" style="margin-top:10px;font-size:12px">
+        忘记密码时，在登录页点「忘记密码？」，用安全问题答案或恢复码就能重设密码。恢复码只显示一次，请截图保存。
+      </div>
+    </div>
+  </section>
+
+  <section class="acc-sec">
     <h2>重置</h2>
     <div class="card danger-zone">
       <div style="font-size:13px;color:#5a6a83;line-height:1.7">
@@ -78,8 +93,8 @@
   </section>
 
   <div style="margin-top:26px;text-align:center;font-size:12px;color:#8b96a8;line-height:1.8">
-    账号与学习记录保存在本机浏览器，不会上传服务器。<br>
-    清理浏览器数据或换设备前，记得先导出备份。
+    账号和学习记录保存在云端，换设备登录同一账号即可继续。<br>
+    仍建议定期导出备份，多一层保险。
   </div>
 </main>
 
@@ -145,6 +160,45 @@
     <div class="modal-foot">
       <button class="btn ghost" data-close="m-reset">取消</button>
       <button class="btn" id="reset-ok" style="background:#b23a2c">确认清空</button>
+    </div>
+  </div>
+</div>
+
+<!-- 安全设置 -->
+<div class="modal" id="m-sec">
+  <div class="modal-box">
+    <h3>设置安全问题</h3>
+    <p>答案不区分大小写、忽略空格。设置后忘记密码就能自助找回。</p>
+    <div class="field">
+      <label for="sec-qsel">问题</label>
+      <select class="inp sel" id="sec-qsel">
+        <option>你最喜欢的水果是什么？</option>
+        <option>你的小学叫什么名字？</option>
+        <option>你养过的宠物叫什么？</option>
+        <option>你最喜欢的颜色是什么？</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sec-ans">答案</label>
+      <input class="inp" id="sec-ans" maxlength="30" placeholder="例如：芒果">
+    </div>
+    <div class="auth-err" id="sec-err"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="m-sec">取消</button>
+      <button class="btn" id="sec-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 展示恢复码 -->
+<div class="modal" id="m-code">
+  <div class="modal-box">
+    <h3>你的恢复码</h3>
+    <p>只显示这一次，请现在截图或复制保存。生成新码后旧码立即作废。</p>
+    <div class="code-box" id="code-val">—</div>
+    <button class="btn ghost sm" id="code-copy" style="width:100%">复制恢复码</button>
+    <div class="modal-foot">
+      <button class="btn" data-close="m-code">我已保存</button>
     </div>
   </div>
 </div>
@@ -259,6 +313,20 @@
     $('acc-user').textContent = u.username;
     $('acc-name').textContent = u.name || '未填';
     $('acc-since').textContent = new Date(u.createdAt).toLocaleDateString('zh-CN');
+
+    /* 安全与找回 */
+    var sec = A.securityOf();
+    $('sec-q').textContent = sec.question || '未设置';
+    $('btn-sec').textContent = sec.question ? '修改安全问题' : '设置安全问题';
+    $('sec-rec').textContent = '检测中…';
+    A.syncStatus().then(function (cloud) {
+      $('sec-rec').textContent = cloud ? (sec.hasRecovery ? '已生成（如需重置换新）' : '未生成') : '仅云端账号支持';
+      $('btn-rec').disabled = !cloud;
+      $('btn-rec').style.opacity = cloud ? '' : '.5';
+    });
+    $('sec-hint').textContent = sec.question
+      ? '忘记密码时，在登录页点「忘记密码？」，用安全问题答案（或恢复码）就能重设密码。'
+      : '⚠️ 还没有设置找回方式。建议现在设置一个安全问题，否则忘记密码只能找管理员在后台重置。';
   }
 
   /* ---------- 编辑 / 新建档案 ---------- */
@@ -340,6 +408,60 @@
       close('m-pw');
       App.toast('密码已修改');
     }).catch(function (e) { bad(e.message || '修改失败'); });
+  };
+
+  /* ---------- 安全与找回 ---------- */
+  var SECQ = ['你最喜欢的水果是什么？', '你的小学叫什么名字？',
+              '你养过的宠物叫什么？', '你最喜欢的颜色是什么？'];
+
+  $('btn-sec').onclick = function () {
+    var cur = A.securityOf().question;
+    $('sec-err').classList.remove('show');
+    $('sec-ans').value = '';
+    var opts = SECQ.slice();
+    if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);
+    $('sec-qsel').innerHTML = opts.map(function (q) {
+      return '<option' + (q === cur ? ' selected' : '') + '>' + A.esc(q) + '</option>';
+    }).join('');
+    open('m-sec');
+  };
+
+  $('sec-save').onclick = function () {
+    var q = $('sec-qsel').value, a = $('sec-ans').value.trim();
+    var box = $('sec-err');
+    function bad(m) { box.textContent = m; box.classList.add('show'); }
+    box.classList.remove('show');
+    if (a.length < 1) return bad('请填写答案');
+    A.setSecurity(q, a).then(function () {
+      close('m-sec');
+      App.toast('安全问题已保存');
+      setTimeout(function () { location.reload(); }, 500);
+    }).catch(function (e) { bad(e.message || '保存失败'); });
+  };
+
+  $('btn-rec').onclick = function () {
+    if ($('btn-rec').disabled) return;
+    if (!confirm('生成新恢复码？旧恢复码会立即失效。')) return;
+    A.rotateRecovery().then(function (res) {
+      $('code-val').textContent = res.recoveryCode;
+      $('sec-rec').textContent = '已生成（如需重置换新）';
+      open('m-code');
+    }).catch(function (e) { alert(e.message || '生成失败'); });
+  };
+
+  $('code-copy').onclick = function () {
+    var s = $('code-val').textContent.trim();
+    if (!s || s === '—') return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(s).then(function () { App.toast('已复制'); }, fb);
+    } else fb();
+    function fb() {
+      var ta = document.createElement('textarea');
+      ta.value = s; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); App.toast('已复制'); } catch (e) { alert('复制失败：' + s); }
+      ta.remove();
+    }
   };
 
   /* ---------- 退出 ---------- */

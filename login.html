@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/app.css">
 <link rel="stylesheet" href="assets/css/auth.css">
-<script src="assets/js/auth.js" data-api="https://ab81cf92b0a23499d.app.workbuddy.host" data-sharecode="POV3OFGOID"></script>
+<script src="assets/js/auth.js"></script>
 <title>登录 · G4 15 天备考</title>
 </head>
 <body class="auth-body">
@@ -59,9 +59,91 @@
           </div>
           <button class="btn gold auth-submit" id="btn-login" type="submit">登录</button>
         </form>
-        <div class="auth-alt">还没有账号？<a data-view="reg">花 20 秒注册一个 →</a></div>
+        <div class="auth-alt">还没有账号？<a data-view="reg">花 20 秒注册一个 →</a>
+          <a class="fg-link" data-view="forgot">忘记密码？</a></div>
         <div class="auth-note">
-          <b>关于数据：</b>账号和学习记录都保存在这台设备的浏览器里，不会上传服务器。换设备或清理浏览器数据会丢失，可在<a href="account.html" style="font-weight:700">账号中心</a>导出备份。
+          <b>关于数据：</b>账号和学习记录存在云端，换手机、换浏览器登录同一个账号都能继续。也可以在<a href="account.html" style="font-weight:700">账号中心</a>导出备份。
+        </div>
+      </section>
+
+      <!-- ========== 找回密码 ========== -->
+      <section id="v-forgot" hidden>
+        <h1 class="ac-title">找回密码</h1>
+        <p class="ac-sub">用注册时设置的安全问题，或者恢复码，验证后就能重设密码。</p>
+        <div class="auth-err" id="err-forgot"></div>
+
+        <!-- 第 1 步：输入账号 -->
+        <div id="fg-1">
+          <div class="field">
+            <label for="fg-user">账号</label>
+            <input class="inp" id="fg-user" autocomplete="username"
+                   placeholder="注册时用的手机号 / 邮箱 / 昵称" maxlength="24">
+          </div>
+          <button class="btn gold auth-submit" id="fg-next" type="button">下一步</button>
+        </div>
+
+        <!-- 第 2 步：验证 + 新密码 -->
+        <div id="fg-2" hidden>
+          <div class="fg-acc">账号：<b id="fg-acc">—</b><a id="fg-back1">换一个</a></div>
+
+          <div id="fg-q-wrap">
+            <div class="fg-qbox">
+              <span class="fg-qtag">安全问题</span>
+              <span id="fg-q">—</span>
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label for="fg-ans">你的答案</label>
+              <input class="inp" id="fg-ans" maxlength="30" placeholder="不区分大小写">
+            </div>
+          </div>
+
+          <div id="fg-rec-wrap" hidden>
+            <div class="field">
+              <label for="fg-rec">恢复码 <span class="tip">形如 G4-XXXX-XXXX</span></label>
+              <input class="inp codein" id="fg-rec" maxlength="20" placeholder="G4-XXXX-XXXX" autocapitalize="characters">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="fg-p1">新密码</label>
+            <div class="pw-wrap">
+              <input class="inp" id="fg-p1" type="password" autocomplete="new-password"
+                     placeholder="至少 6 位" maxlength="64">
+              <button type="button" class="pw-eye" data-pw="fg-p1">显示</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="fg-p2">确认新密码</label>
+            <input class="inp" id="fg-p2" type="password" autocomplete="new-password"
+                   placeholder="再输一遍" maxlength="64">
+          </div>
+          <button class="btn gold auth-submit" id="fg-submit" type="button">重置密码</button>
+          <div class="auth-alt"><a id="fg-mode">改用恢复码 →</a></div>
+        </div>
+
+        <!-- 第 3 步：成功 -->
+        <div id="fg-3" hidden>
+          <div class="fg-ok">✅ 密码已重置，可以用新密码登录了</div>
+          <div id="fg-code-wrap">
+            <div class="fg-codecap">新的恢复码（旧恢复码已作废，请截图保存）：</div>
+            <div class="code-box" id="fg-code">G4-XXXX-XXXX</div>
+            <button class="btn ghost sm" id="fg-copy" type="button">复制恢复码</button>
+          </div>
+          <button class="btn gold auth-submit" id="fg-gologin" type="button" style="margin-top:18px">去登录</button>
+        </div>
+
+        <div class="auth-alt" style="margin-top:18px"><a data-view="login">← 返回登录</a></div>
+      </section>
+
+      <!-- ========== 保存恢复码 ========== -->
+      <section id="v-rec" hidden>
+        <h1 class="ac-title">账号已创建 🎉</h1>
+        <p class="ac-sub">这是你的<strong>恢复码</strong>。忘记密码时，用它就能重设密码——请现在截图或复制保存。</p>
+        <div class="code-box" id="rec-code">G4-XXXX-XXXX</div>
+        <button class="btn ghost sm" id="rec-copy" type="button" style="margin-bottom:18px">复制恢复码</button>
+        <button class="btn gold auth-submit" id="rec-next" type="button">我已保存，下一步</button>
+        <div class="auth-note" style="margin-top:16px">
+          忘了保存也没关系：登录后在<a href="account.html" style="font-weight:700">账号中心 · 安全</a>可以重新生成一个。
         </div>
       </section>
 
@@ -94,6 +176,17 @@
             <label for="rg-pass2">确认密码</label>
             <input class="inp" id="rg-pass2" type="password" autocomplete="new-password"
                    placeholder="再输一遍" maxlength="64" required>
+          </div>
+          <div class="field">
+            <label for="rg-secq">安全问题 <span class="tip">忘记密码时用来验证</span></label>
+            <select class="inp sel" id="rg-secq">
+              <option>你最喜欢的水果是什么？</option>
+              <option>你的小学叫什么名字？</option>
+              <option>你养过的宠物叫什么？</option>
+              <option>你最喜欢的颜色是什么？</option>
+            </select>
+            <input class="inp" id="rg-seca" style="margin-top:8px" maxlength="30"
+                   placeholder="答案（建议填，忘了密码全靠它）">
           </div>
           <button class="btn gold auth-submit" id="btn-reg" type="submit">创建账号</button>
         </form>
@@ -152,7 +245,7 @@
 
   /* ---------- 视图切换 ---------- */
   function view(name) {
-    ['login', 'reg', 'pick', 'setup'].forEach(function (k) {
+    ['login', 'reg', 'pick', 'setup', 'forgot', 'rec'].forEach(function (k) {
       var el = $('v-' + k);
       if (el) el.hidden = (k !== name);
     });
@@ -164,6 +257,14 @@
       });
     }
     window.scrollTo(0, 0);
+    if (name === 'forgot') {
+      $('fg-1').hidden = false;
+      $('fg-2').hidden = true;
+      $('fg-3').hidden = true;
+      $('fg-user').value = $('li-user').value.trim();
+      $('fg-ans').value = ''; $('fg-rec').value = '';
+      $('fg-p1').value = ''; $('fg-p2').value = '';
+    }
   }
   Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (el) {
     el.addEventListener('click', function (e) {
@@ -181,7 +282,7 @@
     el.classList.add('show');
   }
   function clearErr() {
-    ['err-login', 'err-reg'].forEach(function (k) {
+    ['err-login', 'err-reg', 'err-forgot'].forEach(function (k) {
       var el = $(k); if (el) { el.textContent = ''; el.classList.remove('show'); }
     });
   }
@@ -222,24 +323,161 @@
   });
 
   /* ---------- 注册 ---------- */
+  var pendingRec = null;   // 注册后待展示的恢复码
   $('f-reg').addEventListener('submit', function (e) {
     e.preventDefault();
     clearErr();
     var u = $('rg-user').value.trim(), n = $('rg-name').value.trim();
     var p = $('rg-pass').value, p2 = $('rg-pass2').value;
+    var secA = $('rg-seca').value.trim();
+    var secQ = $('rg-secq').value;
     if (!u) return err('err-reg', '请先填账号');
     if (p.length < 6) return err('err-reg', '密码至少 6 位');
     if (p !== p2) return err('err-reg', '两次输入的密码不一样');
     var btn = $('btn-reg');
     busy(btn, true, '创建中…');
-    A.register(u, p, n).then(function () {
+    A.register(u, p, n, secA ? { q: secQ, a: secA } : null).then(function (res) {
       busy(btn, false);
-      showSetup(A.current().profile.id, 'first');
+      var code = res && res.recoveryCode;
+      if (code) {
+        pendingRec = code;
+        $('rec-code').textContent = code;
+        view('rec');
+      } else {
+        showSetup(A.current().profile.id, 'first');
+      }
     }).catch(function (e2) {
       busy(btn, false);
       err('err-reg', e2.message || '注册失败，请重试');
     });
   });
+
+  $('rec-next').addEventListener('click', function () {
+    showSetup(A.current().profile.id, 'first');
+  });
+  $('rec-copy').addEventListener('click', function () {
+    copyText($('rec-code').textContent);
+  });
+
+  /* ---------- 找回密码 ---------- */
+  var fgUser = '', fgHasQ = false, fgHasRec = false, fgUseRec = false;
+
+  function fgErr(m) { err('err-forgot', m); }
+
+  function renderFgMode() {
+    $('fg-q-wrap').hidden = fgUseRec;
+    $('fg-rec-wrap').hidden = !fgUseRec;
+    var a = $('fg-mode');
+    if (fgUseRec) {
+      a.textContent = fgHasQ ? '改用安全问题 →' : '';
+      a.hidden = !fgHasQ;
+    } else {
+      a.textContent = fgHasRec ? '改用恢复码 →' : '';
+      a.hidden = !fgHasRec;
+    }
+    $('fg-ans').value = '';
+    $('fg-rec').value = '';
+  }
+
+  $('fg-next').addEventListener('click', function () {
+    var u = $('fg-user').value.trim();
+    if (!u) return fgErr('请先填账号');
+    var btn = $('fg-next');
+    busy(btn, true, '查询中…');
+    A.forgotInfo(u).then(function (info) {
+      busy(btn, false);
+      fgUser = u;
+      fgHasQ = !!info.question;
+      fgHasRec = !!info.hasRecovery;
+      if (!fgHasQ && !fgHasRec) {
+        return fgErr('这个账号还没有设置安全问题和恢复码，暂时无法自助找回。请在手机里用已登录的浏览器打开「账号中心 · 安全」补设；如果已经退不出来，把账号名发给我，我帮你在后台重置。');
+      }
+      fgUseRec = !fgHasQ && fgHasRec;
+      $('fg-acc').textContent = u;
+      $('fg-q').textContent = info.question || '—';
+      $('fg-p1').value = ''; $('fg-p2').value = '';
+      renderFgMode();
+      $('fg-1').hidden = true; $('fg-2').hidden = false; $('fg-3').hidden = true;
+      clearErr();
+    }).catch(function (e2) {
+      busy(btn, false);
+      fgErr(e2.message || '查询失败，请稍后再试');
+    });
+  });
+
+  $('fg-back1').addEventListener('click', function () {
+    $('fg-2').hidden = true; $('fg-1').hidden = false; clearErr();
+  });
+
+  $('fg-mode').addEventListener('click', function () {
+    if (this.hidden) return;
+    fgUseRec = !fgUseRec;
+    renderFgMode();
+    clearErr();
+  });
+
+  $('fg-submit').addEventListener('click', function () {
+    var p1 = $('fg-p1').value, p2 = $('fg-p2').value;
+    if (p1.length < 6) return fgErr('新密码至少 6 位');
+    if (p1 !== p2) return fgErr('两次输入的新密码不一样');
+    var payload = { username: fgUser, newPassword: p1 };
+    if (fgUseRec) {
+      var rc = $('fg-rec').value.trim().toUpperCase();
+      if (!rc) return fgErr('请填恢复码');
+      payload.recoveryCode = rc;
+    } else {
+      var an = $('fg-ans').value.trim();
+      if (!an) return fgErr('请填安全问题答案');
+      payload.answer = an;
+    }
+    var btn = $('fg-submit');
+    busy(btn, true, '重置中…');
+    A.forgotReset(payload).then(function (res) {
+      busy(btn, false);
+      var code = res && res.recoveryCode;
+      if (code) { $('fg-code').textContent = code; $('fg-code-wrap').hidden = false; }
+      else { $('fg-code-wrap').hidden = true; }
+      $('fg-2').hidden = true; $('fg-3').hidden = false;
+      clearErr();
+    }).catch(function (e2) {
+      busy(btn, false);
+      fgErr(e2.message || '重置失败，请稍后再试');
+    });
+  });
+
+  $('fg-copy').addEventListener('click', function () {
+    copyText($('fg-code').textContent);
+  });
+
+  $('fg-gologin').addEventListener('click', function () {
+    $('li-user').value = fgUser;
+    $('li-pass').value = '';
+    $('li-pass').focus();
+    view('login');
+  });
+
+  function copyText(txt) {
+    var s = String(txt || '').trim();
+    if (!s) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(s).then(function () { toast('已复制：' + s); }, fallback);
+    } else fallback();
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = s; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('已复制：' + s); } catch (e) { alert('复制失败，请手抄：' + s); }
+      ta.remove();
+    }
+  }
+  function toast(msg) {
+    var d = document.createElement('div');
+    d.className = 'fg-toast';
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(function () { d.classList.add('on'); }, 10);
+    setTimeout(function () { d.classList.remove('on'); setTimeout(function () { d.remove(); }, 300); }, 1900);
+  }
 
   /* ---------- 档案选择 ---------- */
   function pmeta(pid) {

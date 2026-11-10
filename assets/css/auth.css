@@ -327,3 +327,52 @@
 .modal-box p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
 .modal-foot { display: flex; gap: 9px; margin-top: 18px; }
 .modal-foot .btn { flex: 1; }
+
+/* ---------- 找回密码 ---------- */
+.fg-link { float: right; color: var(--muted) !important; font-weight: 600 !important; font-size: 13px; }
+.fg-link:hover { color: var(--navy2) !important; }
+
+.fg-acc {
+  display: flex; align-items: center; gap: 8px;
+  background: #f5f7fb; border: 1px solid var(--line, #e6eaf2);
+  border-radius: 12px; padding: 10px 13px; margin-bottom: 16px;
+  font-size: 13px; color: var(--muted);
+}
+.fg-acc b { color: var(--ink); font-weight: 700; }
+.fg-acc a { margin-left: auto; font-weight: 700; color: var(--navy2); cursor: pointer; font-size: 12.5px; }
+
+.fg-qbox {
+  background: #fdf8ec; border: 1px solid #f0e2c4; border-radius: 12px;
+  padding: 12px 14px; font-size: 14px; color: var(--ink); line-height: 1.55;
+}
+.fg-qtag {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  color: #a07d33; background: #f7ecd3; border-radius: 6px;
+  padding: 2px 7px; margin-right: 8px; vertical-align: 1px;
+}
+
+.sel { appearance: none; -webkit-appearance: none; background-image: none; cursor: pointer; }
+.codein { letter-spacing: .08em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
+
+.code-box {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px; font-weight: 700; letter-spacing: .12em;
+  text-align: center; color: var(--navy);
+  background: #f7f3e9; border: 1.5px dashed #ddc48d; border-radius: 14px;
+  padding: 16px 10px; margin: 4px 0 12px;
+  user-select: all; -webkit-user-select: all;
+}
+
+.fg-ok {
+  background: #eef8f2; border: 1px solid #cfe9dc; color: #14724f;
+  border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 700;
+}
+.fg-codecap { margin: 16px 0 8px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+.fg-toast {
+  position: fixed; left: 50%; bottom: 40px; transform: translate(-50%, 12px);
+  background: rgba(13, 31, 61, .94); color: #fff; font-size: 13.5px;
+  padding: 10px 18px; border-radius: 99px; z-index: 999; opacity: 0;
+  transition: opacity .2s, transform .2s; max-width: 86vw; text-align: center;
+}
+.fg-toast.on { opacity: 1; transform: translate(-50%, 0); }

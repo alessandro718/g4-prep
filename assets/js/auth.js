@@ -256,7 +256,8 @@
     d.users[res.user.id] = {
       id: res.user.id, username: res.user.username, name: res.user.name,
       cloud: true, createdAt: res.user.createdAt || now(),
-      lastLogin: now(), lastPid: res.profile.id, profiles: res.profiles
+      lastLogin: now(), lastPid: res.profile.id, profiles: res.profiles,
+      security: res.user.security || { question: '', hasRecovery: false }
     };
     saveDb(d);
     writeJSON(CK, { token: res.token, uid: res.user.id, exp: res.expiresAt || (now() + SESSION_MS) });
@@ -265,18 +266,20 @@
     return res;
   }
 
-  function cloudRegister(u, p, display) {
-    return api('/api/register', 'POST', { username: u, password: p, nickname: display })
-      .then(applyCloudSession);
+  function cloudRegister(u, p, display, sec) {
+    return api('/api/register', 'POST', {
+      username: u, password: p, nickname: display,
+      secQ: (sec && sec.q) || null, secA: (sec && sec.a) || null
+    }).then(applyCloudSession);
   }
   function cloudLogin(u, p) {
     return api('/api/login', 'POST', { username: u, password: p }).then(applyCloudSession);
   }
 
   /* ================= 对外：注册 / 登录 / 改密 ================= */
-  function register(login, password, display) {
+  function register(login, password, display, sec) {
     return modeReady().then(function () {
-      if (MODE === 'cloud') return cloudRegister(login, password, display);
+      if (MODE === 'cloud') return cloudRegister(login, password, display, sec);
       return localRegister(login, password, display);
     });
   }
@@ -521,6 +524,101 @@
     return false;
   }
 
+  /* ================= 找回密码 ================= */
+  function localFind(login) {
+    var u = norm(login), hit = null, d = db();
+    Object.keys(d.users).forEach(function (id) {
+      if (hit) return;
+      var r = d.users[id];
+      if (r && r.username === u) hit = r;
+    });
+    return hit;
+  }
+
+  /* 查询找回方式：返回 { question, hasRecovery } */
+  function forgotInfo(login) {
+    var nm = String(login || '').trim();
+    return modeReady().then(function () {
+      if (!nm) throw new Error('请先填账号');
+      if (MODE === 'cloud') return api('/api/forgot/info', 'POST', { username: nm });
+      var rec = localFind(nm);
+      if (!rec) throw new Error('找不到这个账号，请确认账号拼写');
+      return { exists: true, question: rec.secQ || '', hasRecovery: false, local: true };
+    });
+  }
+
+  /* 重置密码：answer 或 recoveryCode 二选一；返回 { ok, recoveryCode } */
+  function forgotReset(payload) {
+    var nm = String(payload.username || '').trim();
+    var np = String(payload.newPassword || '');
+    return modeReady().then(function () {
+      if (np.length < 6) throw new Error('新密码至少 6 位');
+      if (MODE === 'cloud') {
+        return api('/api/forgot/reset', 'POST', {
+          username: nm, newPassword: np,
+          answer: payload.answer || null,
+          recoveryCode: payload.recoveryCode || null
+        });
+      }
+      var rec = localFind(nm);
+      if (!rec) throw new Error('找不到这个账号');
+      var d = db();
+      d.users[rec.id].pwLen = np.length;
+      saveDb(d);
+      return { ok: true, recoveryCode: '', local: true };
+    });
+  }
+
+  function setCachedSecurity(q, hasRec) {
+    var c = current();
+    if (!c) return;
+    var d = db(), u = d.users[c.user.id];
+    if (!u) return;
+    u.security = {
+      question: q != null ? q : ((u.security && u.security.question) || ''),
+      hasRecovery: !!hasRec
+    };
+    saveDb(d);
+  }
+
+  /* 设置 / 修改安全问题（需登录） */
+  function setSecurity(q, a) {
+    var qq = String(q || '').trim(), aa = String(a || '').trim();
+    return modeReady().then(function () {
+      if (!qq || !aa) throw new Error('请填写问题和答案');
+      if (MODE === 'cloud') {
+        return api('/api/security', 'PATCH', { secQ: qq, secA: aa }).then(function (res) {
+          setCachedSecurity(qq, res && res.security ? res.security.hasRecovery : true);
+          return res;
+        });
+      }
+      var c = current();
+      if (!c) throw new Error('请先登录');
+      var d = db();
+      d.users[c.user.id].secQ = qq;
+      d.users[c.user.id].secA = 'local';   // 本机模式不校验答案
+      saveDb(d);
+      return { ok: true, security: { question: qq, hasRecovery: false } };
+    });
+  }
+
+  /* 重新生成恢复码（仅云端） */
+  function rotateRecovery() {
+    return modeReady().then(function () {
+      if (MODE !== 'cloud' || !tokenValid()) throw new Error('只有云端账号才有恢复码');
+      return api('/api/recovery/rotate', 'POST').then(function (res) {
+        setCachedSecurity(null, true);
+        return res;
+      });
+    });
+  }
+
+  function securityOf() {
+    var c = current();
+    var s = (c && c.user && c.user.security) || null;
+    return { question: (s && s.question) || '', hasRecovery: !!(s && s.hasRecovery) };
+  }
+
   /* ---------------- 界面小工具 ---------------- */
   function initials(name) {
     var s = String(name || '').trim();
@@ -554,6 +652,11 @@
     login: login,
     logout: logout,
     changePassword: changePassword,
+    forgotInfo: forgotInfo,
+    forgotReset: forgotReset,
+    setSecurity: setSecurity,
+    rotateRecovery: rotateRecovery,
+    securityOf: securityOf,
     switchProfile: switchProfile,
     addProfile: addProfile,
     updateProfile: updateProfile,
