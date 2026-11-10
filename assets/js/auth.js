@@ -56,9 +56,16 @@
     var tk = readJSON(CK, null);
     var opts = { method: method || 'GET', headers: { 'Content-Type': 'application/json' } };
     if (ctrl) opts.signal = ctrl.signal;
-    if (tk && tk.token) opts.headers['Authorization'] = 'Bearer ' + tk.token;
+    if (tk && tk.token) {
+      opts.headers['Authorization'] = 'Bearer ' + tk.token;
+      // 部分网关会剥离 Authorization 头，token 同时走 URL 参数兜底
+      path = withSc(path);
+      path += (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(tk.token);
+    } else {
+      path = withSc(path);
+    }
     if (body !== undefined) opts.body = JSON.stringify(body);
-    return fetch(API + withSc(path), opts).then(function (r) {
+    return fetch(API + path, opts).then(function (r) {
       if (timer) clearTimeout(timer);
       if (r.status === 401) {
         clearCloud();
