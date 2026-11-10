@@ -38,7 +38,10 @@
     return Object.assign(base, s);
   }
   var S = load();
-  function save() { try { localStorage.setItem(DB, JSON.stringify(S)); } catch (e) {} }
+  function save() {
+    try { localStorage.setItem(DB, JSON.stringify(S)); } catch (e) {}
+    if (AUTH && AUTH.scheduleSync) AUTH.scheduleSync();   // 云端模式：自动同步进度
+  }
 
   /* ---------- 进度计算 ---------- */
   function todayIdx() {
@@ -383,5 +386,6 @@
     var page = document.body.getAttribute('data-page') || '';
     renderChrome(page);
     startReminder();
+    if (AUTH && AUTH.syncOnLoad) AUTH.syncOnLoad();   // 云端模式：打开页面时拉取最新进度
   }
 })(window);

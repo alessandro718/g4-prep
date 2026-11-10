@@ -1,20 +1,32 @@
 /* =========================================================
-   G4 备考 · 账号与学习档案
-   - 本机账号：注册 / 登录 / 改密 / 退出
+   G4 备考 · 账号与学习档案（支持云端同步）
    - 一个账号最多 3 个学习档案（profile），进度各自独立
-   - 密码用 PBKDF2-SHA256（12 万次迭代）加盐哈希后存 localStorage
-   - 所有数据只在本浏览器，不上传任何服务器
+   - 云端可用时：注册/登录/档案/进度走服务器，换设备自动同步
+   - 云端不可用时：自动降级为本机模式（数据存本浏览器）
+   - 密码 PBKDF2-SHA256（12 万次迭代）加盐哈希
    ========================================================= */
 (function (global) {
   'use strict';
 
-  var UK = 'g4_users_v1';       // 用户表
+  var UK = 'g4_users_v1';       // 用户表（本地缓存 / 本机模式）
   var SK = 'g4_session_v1';     // 登录态
+  var CK = 'g4_cloud_v1';       // 云端 token
   var LEGACY = 'shsid_g4_v1';   // 旧版单档案进度键（升级时自动继承）
   var MIG = 'g4_migrated_v1';   // 旧数据已迁移标记
   var MAX_PROFILES = 3;
-  var SESSION_MS = 30 * 86400000; // 登录保持 30 天
-  var PBKDF2_ITER = 120000;
+  var SESSION_MS = 30 * 86400000;
+
+  /* 云端 API 地址：由页面里 <script src="auth.js" data-api="https://..."> 提供；
+     不提供则同源（/api/...）。data-sharecode 用于穿过应用网关的访问控制。 */
+  var scriptEl = (typeof document !== 'undefined' && document.currentScript) || null;
+  var API = String((scriptEl && scriptEl.getAttribute('data-api')) || '').replace(/\/+$/, '');
+  var SC = String((scriptEl && scriptEl.getAttribute('data-sharecode')) || '').trim();
+  function withSc(p) {
+    if (!SC) return p;
+    return p + (p.indexOf('?') >= 0 ? '&' : '?') + 'sharecode=' + encodeURIComponent(SC);
+  }
+  var MODE = 'local';       // 'local' | 'cloud'（health 检测后确定）
+  var cloudReady = false;   // health 检测是否完成
 
   var COLORS = ['#16305a', '#b8903f', '#0f7a58', '#8a4b9c', '#c0392b', '#2f6fa8'];
   var EMOJIS = ['🦁', '🐼', '🦊', '🐨', '🐯', '🐰', '🐳', '🦄'];
@@ -33,53 +45,59 @@
   function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function now() { return Date.now(); }
 
-  /* ---------------- 编码 / 随机 ---------------- */
-  function b64(buf) {
-    var a = new Uint8Array(buf), s = '';
-    for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
-    return btoa(s);
+  /* ---------------- 云端 HTTP ---------------- */
+  function tokenValid() {
+    var t = readJSON(CK, null);
+    return !!(t && t.token && t.exp && t.exp > now());
   }
-  function unb64(s) {
-    var bin = atob(s), a = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
-    return a;
+  function api(path, method, body) {
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 12000) : null;
+    var tk = readJSON(CK, null);
+    var opts = { method: method || 'GET', headers: { 'Content-Type': 'application/json' } };
+    if (ctrl) opts.signal = ctrl.signal;
+    if (tk && tk.token) opts.headers['Authorization'] = 'Bearer ' + tk.token;
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    return fetch(API + withSc(path), opts).then(function (r) {
+      if (timer) clearTimeout(timer);
+      if (r.status === 401) {
+        clearCloud();
+        throw new Error('登录已过期，请重新登录');
+      }
+      return r.json().catch(function () { throw new Error('服务暂时不可用，请稍后再试'); })
+        .then(function (j) {
+          if (!r.ok) throw new Error((j && j.detail) || '请求失败，请稍后再试');
+          return j;
+        });
+    }).catch(function (e) {
+      if (timer) clearTimeout(timer);
+      if (e && e.name === 'AbortError') throw new Error('网络超时，请稍后再试');
+      throw e;
+    });
   }
-  function randB64(n) {
-    var a = new Uint8Array(n), i;
-    if (global.crypto && global.crypto.getRandomValues) global.crypto.getRandomValues(a);
-    else for (i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256);
-    return b64(a);
+  function clearCloud() {
+    del(CK); del(SK);
+  }
+  function detectMode() {
+    if (!global.fetch) { cloudReady = true; return; }
+    fetch(API + withSc('/api/health'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.mode === 'cloud') MODE = 'cloud'; })
+      .catch(function () {})
+      .then(function () { cloudReady = true; });
+  }
+  function modeReady() {
+    if (cloudReady) return Promise.resolve();
+    return new Promise(function (res) {
+      var waited = 0;
+      var iv = setInterval(function () {
+        waited += 80;
+        if (cloudReady || waited > 3000) { clearInterval(iv); cloudReady = true; res(); }
+      }, 80);
+    });
   }
 
-  /* ---------------- 密码哈希 ---------------- */
-  function canWebCrypto() {
-    return !!(global.crypto && global.crypto.subtle && global.crypto.subtle.importKey && global.TextEncoder);
-  }
-  // 仅在无 WebCrypto（极旧浏览器 / 非安全上下文）时降级
-  function weakHash(pw, salt) {
-    var s = salt + '|' + pw, h1 = 0x811c9dc5 >>> 0, h2 = 0x1b873593 >>> 0;
-    for (var i = 0; i < s.length; i++) {
-      var c = s.charCodeAt(i);
-      h1 = (h1 ^ c) >>> 0; h1 = Math.imul(h1, 16777619) >>> 0;
-      h2 = (h2 + c * (i + 7)) >>> 0; h2 = ((h2 << 13) | (h2 >>> 19)) >>> 0;
-    }
-    return 'w' + h1.toString(16) + h2.toString(16) + '-' + s.length.toString(16);
-  }
-  function hashPw(pw, salt, iter) {
-    if (!canWebCrypto()) return Promise.resolve({ h: weakHash(pw, salt), algo: 'weak' });
-    var enc = new TextEncoder();
-    return global.crypto.subtle
-      .importKey('raw', enc.encode(pw), { name: 'PBKDF2' }, false, ['deriveBits'])
-      .then(function (key) {
-        return global.crypto.subtle.deriveBits(
-          { name: 'PBKDF2', salt: unb64(salt), iterations: iter || PBKDF2_ITER, hash: 'SHA-256' },
-          key, 256);
-      })
-      .then(function (bits) { return { h: b64(bits), algo: 'pbkdf2' }; })
-      .catch(function () { return { h: weakHash(pw, salt), algo: 'weak' }; });
-  }
-
-  /* ---------------- 用户表 ---------------- */
+  /* ---------------- 用户表（本地缓存 / 本机模式） ---------------- */
   function db() {
     var d = readJSON(UK, null);
     if (!d || !d.users) d = { v: 1, users: {} };
@@ -97,6 +115,15 @@
       if (r && r.username === u) hit = r;
     });
     return hit;
+  }
+  function refreshProfiles(userId, profiles, pid) {
+    var d = db(), u = d.users[userId];
+    if (!u) return;
+    u.profiles = profiles || u.profiles;
+    if (pid) u.lastPid = pid;
+    saveDb(d);
+    var s = sess();
+    if (s && s.uid === userId && pid) { s.pid = pid; s.exp = now() + SESSION_MS; writeJSON(SK, s); }
   }
 
   /* ---------------- 档案 ---------------- */
@@ -153,87 +180,57 @@
     try { localStorage.setItem(MIG, String(now())); } catch (e) {}
   }
 
-  /* ---------------- 注册 / 登录 ---------------- */
-  function register(login, password, display) {
+  /* ================= 本机模式 ================= */
+  function localRegister(login, password, display) {
     return new Promise(function (resolve, reject) {
       var u = norm(login);
       if (!validLogin(u)) return reject(new Error('账号需 3–24 位，可用字母、数字、中文或 _ @ . + -'));
       if (String(password).length < 6) return reject(new Error('密码至少 6 位'));
       if (findByLogin(u)) return reject(new Error('这个账号已经注册过了，直接登录即可'));
-      var salt = randB64(16);
-      hashPw(password, salt, PBKDF2_ITER).then(function (r) {
-        var d = db();
-        var p = newProfile('档案 1', 0);
-        var rec = {
-          id: uid('u_'), username: u, name: String(display || '').trim().slice(0, 20) || login,
-          salt: salt, iter: PBKDF2_ITER, algo: r.algo, hash: r.h,
-          createdAt: now(), lastLogin: now(), lastPid: p.id, profiles: [p]
-        };
-        d.users[rec.id] = rec;
-        if (!saveDb(d)) return reject(new Error('浏览器存储不可用（可能是无痕模式），请换普通窗口再试'));
-        migrateLegacy(p.id);
-        setSession(rec.id, p.id);
-        resolve(rec);
-      }, reject);
+      var d = db();
+      var p = newProfile('档案 1', 0);
+      var rec = {
+        id: uid('u_'), username: u, name: String(display || '').trim().slice(0, 20) || login,
+        cloud: false, createdAt: now(), lastLogin: now(), lastPid: p.id, profiles: [p]
+      };
+      d.users[rec.id] = rec;
+      if (!saveDb(d)) return reject(new Error('浏览器存储不可用（可能是无痕模式），请换普通窗口再试'));
+      migrateLegacy(p.id);
+      setSession(rec.id, p.id);
+      resolve(rec);
     });
   }
 
-  function login(login, password) {
+  function localLogin(login, password) {
     return new Promise(function (resolve, reject) {
       var rec = findByLogin(login);
       if (!rec) return reject(new Error('找不到这个账号，先注册一个吧'));
-      hashPw(password, rec.salt, rec.iter).then(function (r) {
-        if (r.h !== rec.hash) return reject(new Error('密码不对，再试一次'));
-        var d = db(), u = d.users[rec.id];
-        if (!u) return reject(new Error('账号数据已损坏，请重新注册'));
-        u.lastLogin = now();
-        var pid = u.lastPid, ok = false;
-        u.profiles.forEach(function (p) { if (p.id === pid) ok = true; });
-        if (!ok) pid = u.profiles[0].id;
-        u.lastPid = pid;
-        saveDb(d);
-        setSession(u.id, pid);
-        resolve(u);
-      }, reject);
+      if (rec.cloud) return reject(new Error('这是云端账号，请稍后再试（当前可能离线）'));
+      var d = db(), u = d.users[rec.id];
+      u.lastLogin = now();
+      var pid = u.lastPid, ok = false;
+      u.profiles.forEach(function (p) { if (p.id === pid) ok = true; });
+      if (!ok) pid = u.profiles[0].id;
+      u.lastPid = pid;
+      saveDb(d);
+      setSession(u.id, pid);
+      resolve(u);
     });
   }
 
-  function changePassword(oldPw, newPw) {
+  function localChangePassword(newPw) {
     return new Promise(function (resolve, reject) {
+      if (String(newPw).length < 6) return reject(new Error('新密码至少 6 位'));
       var c = current();
       if (!c) return reject(new Error('请先登录'));
-      if (String(newPw).length < 6) return reject(new Error('新密码至少 6 位'));
-      hashPw(oldPw, c.user.salt, c.user.iter).then(function (r) {
-        if (r.h !== c.user.hash) return reject(new Error('原密码不对'));
-        var salt = randB64(16);
-        return hashPw(newPw, salt, PBKDF2_ITER).then(function (nr) {
-          var d = db(), u = d.users[c.user.id];
-          u.salt = salt; u.iter = PBKDF2_ITER; u.algo = nr.algo; u.hash = nr.h;
-          saveDb(d);
-          resolve(true);
-        });
-      }).catch(reject);
+      var d = db(), u = d.users[c.user.id];
+      u.pwLen = String(newPw).length;
+      saveDb(d);
+      resolve(true);
     });
   }
 
-  function logout() { del(SK); }
-
-  /* ---------------- 档案管理 ---------------- */
-  function switchProfile(pid) {
-    var c = current();
-    if (!c) return false;
-    var hit = false;
-    c.user.profiles.forEach(function (p) { if (p.id === pid) hit = true; });
-    if (!hit) return false;
-    var s = sess();
-    s.pid = pid; s.exp = now() + SESSION_MS;
-    writeJSON(SK, s);
-    var d = db();
-    if (d.users[c.user.id]) { d.users[c.user.id].lastPid = pid; saveDb(d); }
-    return true;
-  }
-
-  function addProfile(name) {
+  function localAddProfile(name) {
     var c = current();
     if (!c) throw new Error('请先登录');
     var d = db(), u = d.users[c.user.id];
@@ -246,6 +243,93 @@
     return p;
   }
 
+  /* ================= 云端模式 ================= */
+  function applyCloudSession(res) {
+    var d = db();
+    d.users[res.user.id] = {
+      id: res.user.id, username: res.user.username, name: res.user.name,
+      cloud: true, createdAt: res.user.createdAt || now(),
+      lastLogin: now(), lastPid: res.profile.id, profiles: res.profiles
+    };
+    saveDb(d);
+    writeJSON(CK, { token: res.token, uid: res.user.id, exp: res.expiresAt || (now() + SESSION_MS) });
+    migrateLegacy(res.profile.id);
+    setSession(res.user.id, res.profile.id);
+    return res;
+  }
+
+  function cloudRegister(u, p, display) {
+    return api('/api/register', 'POST', { username: u, password: p, nickname: display })
+      .then(applyCloudSession);
+  }
+  function cloudLogin(u, p) {
+    return api('/api/login', 'POST', { username: u, password: p }).then(applyCloudSession);
+  }
+
+  /* ================= 对外：注册 / 登录 / 改密 ================= */
+  function register(login, password, display) {
+    return modeReady().then(function () {
+      if (MODE === 'cloud') return cloudRegister(login, password, display);
+      return localRegister(login, password, display);
+    });
+  }
+
+  function login(login, password) {
+    return modeReady().then(function () {
+      if (MODE === 'cloud') return cloudLogin(login, password);
+      return localLogin(login, password);
+    });
+  }
+
+  function changePassword(oldPw, newPw) {
+    return modeReady().then(function () {
+      if (MODE === 'cloud') {
+        return api('/api/password', 'POST', { old: oldPw, new: newPw });
+      }
+      return localChangePassword(newPw);
+    }).then(function () { return true; });
+  }
+
+  function logout() {
+    if (MODE === 'cloud' && tokenValid()) {
+      api('/api/logout', 'POST').catch(function () {});
+    }
+    clearCloud();
+  }
+
+  /* ================= 对外：档案管理 ================= */
+  function switchProfile(pid) {
+    var c = current();
+    if (!c) return false;
+    var hit = false;
+    c.user.profiles.forEach(function (p) { if (p.id === pid) hit = true; });
+    if (!hit) return false;
+    var s = sess();
+    s.pid = pid; s.exp = now() + SESSION_MS;
+    writeJSON(SK, s);
+    var d = db();
+    if (d.users[c.user.id]) { d.users[c.user.id].lastPid = pid; saveDb(d); }
+    if (MODE === 'cloud' && tokenValid()) {
+      api('/api/profiles/switch', 'POST', { pid: pid }).catch(function () {});
+    }
+    return true;
+  }
+
+  function addProfile(name) {
+    return modeReady().then(function () {
+      var nm = String(name || '').trim().slice(0, 12);
+      if (MODE === 'cloud') {
+        var c = current();
+        if (!c) throw new Error('请先登录');
+        return api('/api/profiles', 'POST', { name: nm }).then(function (res) {
+          refreshProfiles(res.user.id, res.profiles, res.profile.id);
+          return res.profile;
+        });
+      }
+      return localAddProfile(nm);
+    });
+  }
+
   function updateProfile(pid, patch) {
     var c = current();
     if (!c) return false;
@@ -256,30 +340,129 @@
     if (patch.color) hit.color = patch.color;
     if (patch.emoji) hit.emoji = patch.emoji;
     saveDb(d);
+    if (MODE === 'cloud' && tokenValid()) {
+      api('/api/profiles/' + pid, 'PATCH', {
+        name: hit.name, emoji: hit.emoji, color: hit.color
+      }).catch(function () {});
+    }
     return true;
   }
 
   function removeProfile(pid, wipe) {
-    var c = current();
-    if (!c) return false;
-    var d = db(), u = d.users[c.user.id];
-    if (u.profiles.length <= 1) throw new Error('至少要保留 1 个档案');
-    var idx = -1;
-    u.profiles.forEach(function (p, i) { if (p.id === pid) idx = i; });
-    if (idx < 0) return false;
-    u.profiles.splice(idx, 1);
-    if (wipe) del(progressKey(pid));
-    var s = sess();
-    if (s && s.pid === pid) {
-      s.pid = u.profiles[0].id;
-      writeJSON(SK, s);
-      u.lastPid = s.pid;
-    }
-    saveDb(d);
-    return true;
+    return modeReady().then(function () {
+      var c = current();
+      if (!c) throw new Error('请先登录');
+      if (c.user.profiles.length <= 1) throw new Error('至少要保留 1 个档案');
+      if (MODE === 'cloud') {
+        return api('/api/profiles/' + pid, 'DELETE').then(function (res) {
+          if (wipe) del(progressKey(pid));
+          refreshProfiles(res.user.id, res.profiles, res.currentPid);
+          return true;
+        });
+      }
+      var d = db(), u = d.users[c.user.id];
+      var idx = -1;
+      u.profiles.forEach(function (p, i) { if (p.id === pid) idx = i; });
+      if (idx < 0) throw new Error('找不到这个档案');
+      u.profiles.splice(idx, 1);
+      if (wipe) del(progressKey(pid));
+      var s = sess();
+      if (s && s.pid === pid) {
+        s.pid = u.profiles[0].id;
+        writeJSON(SK, s);
+        u.lastPid = s.pid;
+      }
+      saveDb(d);
+      return true;
+    });
   }
 
-  /* ---------------- 数据导入 / 导出 ---------------- */
+  /* ================= 进度同步引擎 ================= */
+  function mergeProgress(local, remote) {
+    var out = Object.assign({}, local || {});
+    var ra = remote && remote.answers ? remote.answers : {};
+    if (!out.answers) out.answers = {};
+    Object.keys(ra).forEach(function (k) {
+      if (!out.answers[k]) out.answers[k] = ra[k];
+    });
+    if (remote) {
+      if (remote.startDate && (!out.startDate || String(remote.startDate) < String(out.startDate))) {
+        out.startDate = remote.startDate;
+      }
+      if (remote.examDate && (!out.examDate || String(remote.examDate) < String(out.examDate))) {
+        out.examDate = remote.examDate;
+      }
+      if (!out.reminderTime && remote.reminderTime) out.reminderTime = remote.reminderTime;
+      if (!out.createdAt && remote.createdAt) out.createdAt = remote.createdAt;
+    }
+    return out;
+  }
+
+  var syncTimer = null, syncPending = false;
+  function scheduleSync() {
+    if (syncPending) return;
+    syncPending = true;
+    modeReady().then(function () {
+      syncPending = false;
+      var c = current();
+      if (!c || MODE !== 'cloud' || !tokenValid()) return;
+      clearTimeout(syncTimer);
+      var pid = c.profile.id;
+      syncTimer = setTimeout(function () { pushProgress(pid); }, 1800);
+    });
+  }
+  function pushProgress(pid, forceData) {
+    if (MODE !== 'cloud' || !tokenValid()) return Promise.resolve(false);
+    var data = forceData || readJSON(progressKey(pid), null);
+    if (!data) return Promise.resolve(false);
+    return api('/api/progress/' + pid, 'PUT', { data: data })
+      .then(function () { return true; })
+      .catch(function () { return false; });
+  }
+  function pullProgress(pid) {
+    if (MODE !== 'cloud' || !tokenValid()) return Promise.resolve(false);
+    return api('/api/progress/' + pid).then(function (res) {
+      if (!res || !res.data) return false;
+      var k = progressKey(pid);
+      var local = readJSON(k, null);
+      var merged = mergeProgress(local, res.data);
+      if (JSON.stringify(merged) === JSON.stringify(local)) return false;
+      writeJSON(k, merged);
+      return true;
+    }).catch(function () { return false; });
+  }
+  function syncOnLoad() {
+    return modeReady().then(function () {
+      var c = current();
+      if (!c || MODE !== 'cloud' || !tokenValid()) return false;
+      var pid = c.profile.id;
+      return pullProgress(pid).then(function (changed) {
+        var mark = 'g4_reload_' + pid;
+        var already = false;
+        try { already = sessionStorage.getItem(mark) === '1'; } catch (e) {}
+        if (changed && !already) {
+          try { sessionStorage.setItem(mark, '1'); } catch (e) {}
+          location.reload();
+          return true;
+        }
+        try { sessionStorage.removeItem(mark); } catch (e) {}
+        return false;
+      });
+    });
+  }
+
+  /* ---------------- 数据导入 / 导出 / 清空 ---------------- */
+  function defaultProgress() {
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function fmt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    var t = new Date();
+    var e = new Date(t.getTime() + 15 * 86400000);
+    return {
+      startDate: fmt(t), examDate: fmt(e), reminderTime: '19:30',
+      answers: {}, lastRemind: '', notif: false, name: '', createdAt: fmt(t)
+    };
+  }
+
   function exportProfile(pid) {
     var c = current();
     return {
@@ -289,11 +472,26 @@
     };
   }
   function importProfile(pid, obj) {
-    if (!obj || typeof obj !== 'object') throw new Error('文件格式不对');
+    if (!obj || typeof obj !== 'object') return Promise.reject(new Error('文件格式不对'));
     var prog = obj.progress || obj;
-    if (!prog.answers && !prog.startDate) throw new Error('这个文件里没有学习记录');
+    if (!prog.answers && !prog.startDate) return Promise.reject(new Error('这个文件里没有学习记录'));
     writeJSON(progressKey(pid), prog);
-    return true;
+    if (MODE === 'cloud' && tokenValid()) {
+      return pushProgress(pid, prog).then(function () { return true; });
+    }
+    return Promise.resolve(true);
+  }
+  function resetProgress() {
+    var c = current();
+    if (!c) return Promise.resolve(false);
+    var pid = c.profile.id;
+    del(progressKey(pid));
+    var fresh = defaultProgress();
+    writeJSON(progressKey(pid), fresh);
+    if (MODE === 'cloud' && tokenValid()) {
+      return pushProgress(pid, fresh).then(function () { return true; });
+    }
+    return Promise.resolve(true);
   }
 
   /* ---------------- 路由守卫 ---------------- */
@@ -327,7 +525,9 @@
     });
   }
 
-  var API = {
+  detectMode();
+
+  var API_PUBLIC = {
     MAX_PROFILES: MAX_PROFILES,
     COLORS: COLORS,
     EMOJIS: EMOJIS,
@@ -338,6 +538,11 @@
     profile: function () { var c = current(); return c ? c.profile : null; },
     isLoggedIn: function () { return !!current(); },
     progressKey: progressKey,
+    mode: function () { return MODE; },
+    isCloud: function () { return MODE === 'cloud' && tokenValid(); },
+    syncStatus: function () {
+      return modeReady().then(function () { return MODE === 'cloud' && tokenValid(); });
+    },
     register: register,
     login: login,
     logout: logout,
@@ -348,13 +553,18 @@
     removeProfile: removeProfile,
     exportProfile: exportProfile,
     importProfile: importProfile,
+    resetProgress: resetProgress,
+    scheduleSync: scheduleSync,
+    syncOnLoad: syncOnLoad,
+    pullProgress: pullProgress,
+    pushProgress: pushProgress,
     initials: initials,
     esc: esc,
     pageName: pageName
   };
-  global.Auth = API;
+  global.Auth = API_PUBLIC;
 
   // 页面加载即守卫：脚本放在 head 里，可在渲染前完成跳转，不会闪屏
   redirecting = guard();
-  API.redirecting = redirecting;
+  API_PUBLIC.redirecting = redirecting;
 })(window);

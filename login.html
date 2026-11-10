@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/app.css">
 <link rel="stylesheet" href="assets/css/auth.css">
-<script src="assets/js/auth.js"></script>
+<script src="assets/js/auth.js" data-api="https://ab81cf92b0a23499d.app.workbuddy.host" data-sharecode="POV3OFGOID"></script>
 <title>登录 · G4 15 天备考</title>
 </head>
 <body class="auth-body">
@@ -331,13 +331,13 @@
     view('setup');
   }
 
-  $('setup-save').addEventListener('click', function () {
+  $('setup-save').addEventListener('click', async function () {
     var name = $('setup-name').value.trim() || '我的档案';
     try {
       if (setupPid) {
         A.updateProfile(setupPid, { name: name, emoji: pickedEmoji, color: pickedColor });
       } else {
-        var p = A.addProfile(name);
+        var p = await A.addProfile(name);
         A.updateProfile(p.id, { emoji: pickedEmoji, color: pickedColor });
       }
       go();

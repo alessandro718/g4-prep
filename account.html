@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/app.css">
 <link rel="stylesheet" href="assets/css/auth.css">
-<script src="assets/js/auth.js"></script>
+<script src="assets/js/auth.js" data-api="https://ab81cf92b0a23499d.app.workbuddy.host" data-sharecode="POV3OFGOID"></script>
 <title>账号与档案 · G4 备考</title>
 </head>
 <body data-page="account">
@@ -54,6 +54,7 @@
   <section class="acc-sec">
     <h2>账号</h2>
     <div class="card">
+      <div class="kv"><span>数据同步</span><b id="acc-sync">—</b></div>
       <div class="kv"><span>账号</span><b id="acc-user">—</b></div>
       <div class="kv"><span>称呼</span><b id="acc-name">—</b></div>
       <div class="kv"><span>注册时间</span><b id="acc-since">—</b></div>
@@ -252,6 +253,9 @@
 
     /* 数据 & 账号 */
     $('data-meta').textContent = t.ans + ' 题记录 · ' + t.done + '/15 天完成';
+    A.syncStatus().then(function (cloud) {
+      $('acc-sync').textContent = cloud ? '☁️ 云端 · 换设备自动同步' : '仅本机 · 建议导出备份';
+    });
     $('acc-user').textContent = u.username;
     $('acc-name').textContent = u.name || '未填';
     $('acc-since').textContent = new Date(u.createdAt).toLocaleDateString('zh-CN');
@@ -286,28 +290,30 @@
     open('m-edit');
   }
 
-  $('m-save').onclick = function () {
+  $('m-save').onclick = async function () {
     var name = $('m-name').value.trim();
     if (!name) { App.toast('给档案起个名字'); return; }
     try {
       if (editPid) {
         A.updateProfile(editPid, { name: name, emoji: pickedEmoji, color: pickedColor });
+        close('m-edit');
+        App.toast('档案已更新');
+        setTimeout(function () { location.reload(); }, 400);
       } else {
-        var p = A.addProfile(name);
-        A.updateProfile(p.id, { emoji: pickedEmoji, color: pickedColor });
+        await A.addProfile(name);
+        close('m-edit');
+        App.toast('新档案已创建，进度从 Day 1 开始');
+        setTimeout(function () { location.reload(); }, 400);
       }
-      close('m-edit');
-      App.toast(editPid ? '档案已更新' : '新档案已创建，进度从 Day 1 开始');
-      setTimeout(function () { location.reload(); }, 400);
     } catch (e) {
       alert(e.message || '保存失败');
     }
   };
 
   /* ---------- 删除 ---------- */
-  $('del-ok').onclick = function () {
+  $('del-ok').onclick = async function () {
     try {
-      A.removeProfile(delPid, true);
+      await A.removeProfile(delPid, true);
       close('m-del');
       App.toast('档案已删除');
       setTimeout(function () { location.reload(); }, 350);
@@ -357,15 +363,15 @@
   };
 
   $('btn-import').onclick = function () { $('file-import').click(); };
-  $('file-import').onchange = function () {
+  $('file-import').onchange = async function () {
     var f = this.files && this.files[0];
     if (!f) return;
     var fr = new FileReader();
-    fr.onload = function () {
+    fr.onload = async function () {
       try {
         var obj = JSON.parse(String(fr.result));
         if (!confirm('导入会覆盖当前档案的答题记录，确定继续？')) return;
-        A.importProfile(A.current().profile.id, obj);
+        await A.importProfile(A.current().profile.id, obj);
         App.toast('导入成功，正在刷新');
         setTimeout(function () { location.reload(); }, 500);
       } catch (e) {
@@ -378,8 +384,8 @@
 
   /* ---------- 清空 ---------- */
   $('btn-reset').onclick = function () { open('m-reset'); };
-  $('reset-ok').onclick = function () {
-    try { localStorage.removeItem(App.DB); } catch (e) {}
+  $('reset-ok').onclick = async function () {
+    await A.resetProgress();
     App.toast('已清空，正在重新开始');
     setTimeout(function () { location.href = 'index.html'; }, 400);
   };
